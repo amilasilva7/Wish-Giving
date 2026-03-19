@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 
 export default function NewWishPage() {
@@ -12,6 +12,28 @@ export default function NewWishPage() {
   const [locationCoarse, setLocationCoarse] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const raw = localStorage.getItem("wish_draft");
+    if (raw) {
+      try {
+        const draft = JSON.parse(raw);
+        const valid = Date.now() - draft.savedAt < 60 * 60 * 1000;
+        if (valid) {
+          setTitle(draft.title ?? "");
+          setDescription(draft.description ?? "");
+          setCategory(draft.category ?? WISH_CATEGORIES[0]?.id ?? "");
+          setOccasionType(draft.occasionType ?? OCCASION_TYPES[0]?.id ?? "");
+          setVisibility(draft.visibility ?? "public");
+          setLocationCoarse(draft.locationCoarse ?? "");
+        } else {
+          localStorage.removeItem("wish_draft");
+        }
+      } catch {
+        localStorage.removeItem("wish_draft");
+      }
+    }
+  }, []);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -20,11 +42,20 @@ export default function NewWishPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, description, category, occasionType, visibility, locationCoarse })
     });
+    if (res.status === 401) {
+      localStorage.setItem("wish_draft", JSON.stringify({
+        savedAt: Date.now(),
+        title, description, category, occasionType, visibility, locationCoarse
+      }));
+      window.location.href = "/auth/login?redirect=/wishes/new";
+      return;
+    }
     if (!res.ok) {
       const data = await res.json();
       setError(data.error ?? "Failed to create wish");
       return;
     }
+    localStorage.removeItem("wish_draft");
     window.location.href = "/wishes";
   }
 
@@ -79,7 +110,7 @@ export default function NewWishPage() {
           {error && <p className="error-msg">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="submit" className="btn-primary">Save wish</button>
-            <a href="/wishes" className="btn-secondary">Cancel</a>
+            <a href="/wishes" className="btn-secondary" onClick={() => localStorage.removeItem("wish_draft")}>Cancel</a>
           </div>
         </form>
       </div>

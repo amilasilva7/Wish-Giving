@@ -2,18 +2,20 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -24,7 +26,10 @@ export default function RegisterPage() {
       setError(data.error ?? "Registration failed");
       return;
     }
-    setSuccess("Account created. Please check your email to verify.");
+    const loginUrl = redirect !== "/"
+      ? `/auth/login?redirect=${encodeURIComponent(redirect)}`
+      : "/auth/login";
+    window.location.href = loginUrl;
   }
 
   return (
@@ -66,7 +71,6 @@ export default function RegisterPage() {
             />
           </div>
           {error && <p className="error-msg">{error}</p>}
-          {success && <p className="success-msg">{success}</p>}
           <button type="submit" className="btn-primary w-full mt-2">Sign up</button>
         </form>
         <p className="text-sm text-gray-500 mt-4 text-center">
