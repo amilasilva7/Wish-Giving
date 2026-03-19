@@ -25,6 +25,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
+  // C5: block disabled accounts from logging in
+  if (user.status !== "active") {
+    return NextResponse.json({ error: "Account is disabled" }, { status: 401 });
+  }
+
   await createSession(user.id);
 
   return NextResponse.json({

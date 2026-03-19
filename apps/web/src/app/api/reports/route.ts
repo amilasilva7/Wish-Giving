@@ -23,6 +23,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
+  // M8: deduplicate reports — silently succeed if already reported
+  const existing = await prisma.report.findFirst({
+    where: { reporterUserId: user.id, targetType, targetId }
+  });
+  if (existing) {
+    return NextResponse.json({ ok: true });
+  }
+
   await prisma.report.create({
     data: {
       reporterUserId: user.id,

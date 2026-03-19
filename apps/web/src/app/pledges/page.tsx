@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import SparkLoader from "@/app/components/SparkLoader";
 
 type Pledge = {
   id: string;
@@ -20,13 +21,14 @@ const STATUS_COLORS: Record<string, string> = {
   fulfilled: "bg-green-50 text-green-700"
 };
 
-export default function MyPledgesPage() {
+function MyPledgesPageInner() {
   const searchParams = useSearchParams();
   const flash = searchParams.get("flash");
   const [banner, setBanner] = useState<string | null>(null);
   const [pledges, setPledges] = useState<Pledge[]>([]);
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (flash === "pledged") {
@@ -44,7 +46,8 @@ export default function MyPledgesPage() {
       })
       .then(data => {
         if (data) { setPledges(data.pledges ?? []); setLoading(false); }
-      });
+      })
+      .catch(() => { setFetchError(true); setLoading(false); });
   }, []);
 
   if (!authed) {
@@ -60,8 +63,12 @@ export default function MyPledgesPage() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">My pledges</h1>
       {banner && <p className="success-msg mb-4">{banner}</p>}
-      {loading ? (
-        <div className="card text-center py-12 text-gray-400">Loading…</div>
+      {fetchError ? (
+        <div className="card text-center py-12 text-red-500">Failed to load pledges. Please try again.</div>
+      ) : loading ? (
+        <div className="card text-center py-12 text-orange-400">
+          <SparkLoader label="Loading your pledges…" />
+        </div>
       ) : pledges.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
           You haven't pledged to any wishes yet.{" "}
@@ -105,4 +112,8 @@ export default function MyPledgesPage() {
       )}
     </div>
   );
+}
+
+export default function MyPledgesPage() {
+  return <Suspense><MyPledgesPageInner /></Suspense>;
 }

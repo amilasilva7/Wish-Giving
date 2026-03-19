@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import SparkLoader from "@/app/components/SparkLoader";
 
 type Report = {
   id: string;
@@ -14,6 +15,7 @@ type Report = {
 
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -22,9 +24,11 @@ export default function AdminReportsPage() {
     const data = await res.json();
     if (!res.ok) {
       setError(data.error ?? "Failed to load reports");
+      setLoading(false);
       return;
     }
     setReports(data.reports);
+    setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
@@ -82,7 +86,9 @@ export default function AdminReportsPage() {
       </div>
       <p className="text-sm text-gray-500 mb-4">Access requires email listed in <code className="bg-gray-100 px-1 rounded">ADMIN_EMAILS</code>.</p>
       {error && <p className="error-msg mb-4">{error}</p>}
-      {reports.length === 0 ? (
+      {loading ? (
+        <div className="card text-center py-12 text-orange-400"><SparkLoader label="Loading reports…" /></div>
+      ) : reports.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">No reports found.</div>
       ) : (
         <ul className="flex flex-col gap-4">

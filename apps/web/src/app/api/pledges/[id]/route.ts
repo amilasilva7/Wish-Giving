@@ -35,39 +35,42 @@ export async function PATCH(request: Request, { params }: Params) {
     if (pledge.wish.userId !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    await prisma.pledge.update({
-      where: { id: pledge.id },
-      data: { status: "accepted" }
-    });
-    await prisma.wish.update({
-      where: { id: pledge.wishId },
-      data: { status: "in_coordination" }
-    });
+    // C3: only accept a pending pledge
+    if (pledge.status !== "pending") {
+      return NextResponse.json({ error: "Invalid action for current pledge status" }, { status: 400 });
+    }
+    // C7: atomic update
+    await prisma.$transaction([
+      prisma.pledge.update({ where: { id: pledge.id }, data: { status: "accepted" } }),
+      prisma.wish.update({ where: { id: pledge.wishId }, data: { status: "in_coordination" } })
+    ]);
   } else if (action === "decline") {
     if (pledge.wish.userId !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    await prisma.pledge.update({
-      where: { id: pledge.id },
-      data: { status: "declined" }
-    });
-    await prisma.wish.update({
-      where: { id: pledge.wishId },
-      data: { status: "open" }
-    });
+    // C3: only decline a pending pledge
+    if (pledge.status !== "pending") {
+      return NextResponse.json({ error: "Invalid action for current pledge status" }, { status: 400 });
+    }
+    // C7: atomic update
+    await prisma.$transaction([
+      prisma.pledge.update({ where: { id: pledge.id }, data: { status: "declined" } }),
+      prisma.wish.update({ where: { id: pledge.wishId }, data: { status: "open" } })
+    ]);
   } else if (action === "mark_fulfilled") {
     // Either wisher or giver can mark fulfilled in MVP
     if (pledge.wish.userId !== user.id && pledge.giverUserId !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    await prisma.pledge.update({
-      where: { id: pledge.id },
-      data: { status: "fulfilled" }
-    });
-    await prisma.wish.update({
-      where: { id: pledge.wishId },
-      data: { status: "fulfilled" }
-    });
+    // C3: only fulfill an accepted or in_coordination pledge
+    if (pledge.status !== "accepted" && pledge.status !== "in_coordination") {
+      return NextResponse.json({ error: "Invalid action for current pledge status" }, { status: 400 });
+    }
+    // C7: atomic update
+    await prisma.$transaction([
+      prisma.pledge.update({ where: { id: pledge.id }, data: { status: "fulfilled" } }),
+      prisma.wish.update({ where: { id: pledge.wishId }, data: { status: "fulfilled" } })
+    ]);
   } else {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }

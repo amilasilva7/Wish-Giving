@@ -1,10 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
-export default function LoginPage() {
+function LoginPageInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,10 +31,14 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    window.location.href = redirect;
+    // M3: prevent open redirect — only allow same-origin paths
+    const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+    window.location.href = safeRedirect;
   }
 
   return (
+    <>
+    {loading && <PageLoader label="Signing in…" />}
     <div className="max-w-md mx-auto mt-8">
       <div className="card">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Sign in</h1>
@@ -66,7 +72,7 @@ export default function LoginPage() {
           </div>
           {error && <p className="error-msg">{error}</p>}
           <button type="submit" className="btn-primary w-full mt-2" disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? <SparkLoader label="Signing in…" size="sm" /> : "Sign in"}
           </button>
         </form>
         <p className="text-sm text-gray-500 mt-4 text-center">
@@ -85,5 +91,10 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+    </>
   );
+}
+
+export default function LoginPage() {
+  return <Suspense><LoginPageInner /></Suspense>;
 }

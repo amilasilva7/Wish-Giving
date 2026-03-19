@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { isSameOrigin } from "@/lib/sameOrigin";
 
@@ -14,7 +15,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     include: {
       wish: {
-        select: { title: true }
+        select: { id: true, title: true }  // C1: include id so pledge/chat links work
       }
     }
   });
@@ -43,34 +44,63 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Wish not available" }, { status: 400 });
   }
 
-  // Enforce single active pledge per wish (pending/accepted/in_coordination)
-  const activePledge = await prisma.pledge.findFirst({
+  // C2: Prevent self-pledging
+  if (wish.userId === user.id) {
+    return NextResponse.json({ error: "You cannot pledge on your own wish" }, { status: 400 });
+  }
+
+  // C8: Enforce blocks in both directions
+  const block = await prisma.block.findFirst({
     where: {
-      wishId,
-      status: { in: ["pending", "accepted", "in_coordination"] }
+      OR: [
+        { blockerId: user.id, blockedId: wish.userId },
+        { blockerId: wish.userId, blockedId: user.id }
+      ]
     }
   });
-  if (activePledge) {
-    return NextResponse.json({ error: "Wish already has an active pledge" }, { status: 400 });
+  if (block) {
+    return NextResponse.json({ error: "Cannot pledge on this wish" }, { status: 400 });
   }
 
   const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
 
-  const pledge = await prisma.pledge.create({
-    data: {
-      wishId,
-      giverUserId: user.id,
-      message: message ?? null,
-      status: "pending",
-      expiresAt
+  // C6: Move activePledge check inside transaction to prevent TOCTOU race
+  try {
+    const pledge = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const activePledge = await tx.pledge.findFirst({
+        where: {
+          wishId,
+          status: { in: ["pending", "accepted", "in_coordination"] }
+        }
+      });
+      if (activePledge) {
+        throw new Error("ACTIVE_PLEDGE");
+      }
+
+      const newPledge = await tx.pledge.create({
+        data: {
+          wishId,
+          giverUserId: user.id,
+          message: message ?? null,
+          status: "pending",
+          expiresAt
+        }
+      });
+
+      await tx.wish.update({
+        where: { id: wishId },
+        data: { status: "pledged" }
+      });
+
+      return newPledge;
+    });
+
+    return NextResponse.json({ pledge }, { status: 201 });
+  } catch (err: any) {
+    if (err.message === "ACTIVE_PLEDGE") {
+      return NextResponse.json({ error: "Wish already has an active pledge" }, { status: 400 });
     }
-  });
-
-  await prisma.wish.update({
-    where: { id: wishId },
-    data: { status: "pledged" }
-  });
-
-  return NextResponse.json({ pledge }, { status: 201 });
+    throw err;
+  }
 }
 

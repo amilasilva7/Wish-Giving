@@ -40,7 +40,7 @@ export async function POST(request: Request, { params }: Params) {
   const bodyJson = await request.json();
   const { body } = bodyJson as { body: string };
 
-  if (!body || body.length > 2000) {
+  if (!body || !body.trim() || body.length > 2000) {
     return NextResponse.json({ error: "Invalid message" }, { status: 400 });
   }
 

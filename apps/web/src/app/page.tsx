@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
+import SparkLoader from "@/app/components/SparkLoader";
 
 type Wish = {
   id: string;
@@ -113,7 +114,7 @@ export default function HomePage() {
             </select>
           </div>
           <button type="submit" className="btn-primary" disabled={searching}>
-            {searching ? "Searching…" : "Search"}
+            {searching ? <SparkLoader label="Searching…" size="sm" /> : "Search"}
           </button>
         </form>
       </div>
@@ -125,7 +126,9 @@ export default function HomePage() {
           <span className="ml-2 text-sm font-normal text-gray-400">({wishes.length}{nextCursor ? "+" : ""})</span>
         </h2>
         {loading ? (
-          <div className="card text-center py-12 text-gray-400">Loading…</div>
+          <div className="card text-center py-12 text-orange-400">
+            <SparkLoader label="Loading wishes…" />
+          </div>
         ) : fetchError ? (
           <div className="error-msg text-center py-12">
             Failed to load wishes. Please try refreshing the page.
@@ -173,7 +176,7 @@ export default function HomePage() {
             {nextCursor && (
               <div className="text-center mt-6">
                 <button onClick={handleLoadMore} disabled={loadingMore} className="btn-secondary">
-                  {loadingMore ? "Loading…" : "Load more"}
+                  {loadingMore ? <SparkLoader label="Loading…" size="sm" /> : "Load more"}
                 </button>
               </div>
             )}

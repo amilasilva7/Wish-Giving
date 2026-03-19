@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import SparkLoader from "@/app/components/SparkLoader";
 
 type Wish = {
   id: string;
@@ -17,13 +18,14 @@ const FLASH_MESSAGES: Record<string, string> = {
   wish_deleted: "Your wish has been deleted.",
 };
 
-export default function WishesPage() {
+function WishesPageInner() {
   const searchParams = useSearchParams();
   const flash = searchParams.get("flash");
   const [banner, setBanner] = useState<string | null>(null);
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (flash && FLASH_MESSAGES[flash]) {
@@ -41,7 +43,8 @@ export default function WishesPage() {
       })
       .then(data => {
         if (data) { setWishes(data.wishes ?? []); setLoading(false); }
-      });
+      })
+      .catch(() => { setFetchError(true); setLoading(false); });
   }, []);
 
   if (!authed) {
@@ -60,8 +63,12 @@ export default function WishesPage() {
         <Link href="/wishes/new" className="btn-primary">+ New wish</Link>
       </div>
       {banner && <p className="success-msg mb-4">{banner}</p>}
-      {loading ? (
-        <div className="card text-center py-12 text-gray-400">Loading…</div>
+      {fetchError ? (
+        <div className="card text-center py-12 text-red-500">Failed to load wishes. Please try again.</div>
+      ) : loading ? (
+        <div className="card text-center py-12 text-orange-400">
+          <SparkLoader label="Loading your wishes…" />
+        </div>
       ) : wishes.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
           You haven't made any wishes yet.
@@ -98,4 +105,8 @@ export default function WishesPage() {
       )}
     </div>
   );
+}
+
+export default function WishesPage() {
+  return <Suspense><WishesPageInner /></Suspense>;
 }

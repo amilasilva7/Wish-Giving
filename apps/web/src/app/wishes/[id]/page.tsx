@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
 type Wish = {
   id: string;
@@ -75,7 +77,7 @@ export default function EditWishPage() {
   }
 
   if (loading) {
-    return <div className="card text-center py-12 text-gray-400">Loading...</div>;
+    return <div className="card text-center py-12 text-orange-400"><SparkLoader label="Loading wish…" /></div>;
   }
 
   if (!wish) {
@@ -83,6 +85,8 @@ export default function EditWishPage() {
   }
 
   return (
+    <>
+    {(saving || deleting) && <PageLoader label={deleting ? "Deleting wish…" : "Saving wish…"} />}
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit wish</h1>
       <div className="card">
@@ -158,7 +162,7 @@ export default function EditWishPage() {
           <div className="flex items-center justify-between pt-2">
             <div className="flex gap-3">
               <button type="submit" className="btn-primary" disabled={saving}>
-                {saving ? "Saving…" : "Save changes"}
+                {saving ? <SparkLoader label="Saving…" size="sm" /> : "Save changes"}
               </button>
               <button type="button" onClick={() => router.push("/wishes")} className="btn-secondary">Cancel</button>
             </div>
@@ -170,7 +174,7 @@ export default function EditWishPage() {
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-600">Delete this wish permanently?</span>
                 <button type="button" className="btn-danger" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? "Deleting…" : "Yes, delete"}
+                  {deleting ? <SparkLoader label="Deleting…" size="sm" /> : "Yes, delete"}
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => setConfirmDelete(false)}>Cancel</button>
               </div>
@@ -179,5 +183,6 @@ export default function EditWishPage() {
         </form>
       </div>
     </div>
+    </>
   );
 }

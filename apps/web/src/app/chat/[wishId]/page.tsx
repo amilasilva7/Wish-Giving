@@ -2,6 +2,8 @@
 
 import { useEffect, useState, FormEvent, useRef } from "react";
 import { useParams } from "next/navigation";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
 type Message = {
   id: string;
@@ -77,6 +79,8 @@ export default function ChatPage() {
   }
 
   return (
+    <>
+    {sending && <PageLoader label="Sending message…" />}
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Chat about this wish</h1>
       {conversation ? (
@@ -113,15 +117,16 @@ export default function ChatPage() {
                 required
               />
               <button type="submit" className="btn-primary self-end" disabled={sending}>
-                {sending ? "Sending…" : "Send"}
+                {sending ? <SparkLoader size="sm" /> : "Send"}
               </button>
             </form>
             {error && <p className="error-msg mt-2">{error}</p>}
           </div>
         </div>
       ) : (
-        <div className="card text-center py-12 text-gray-400">Loading conversation...</div>
+        <div className="card text-center py-12 text-orange-400"><SparkLoader label="Loading conversation…" /></div>
       )}
     </div>
+    </>
   );
 }

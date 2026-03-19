@@ -17,6 +17,8 @@ export async function GET(_request: Request, { params }: Params) {
   const conversation = await prisma.conversation.findFirst({
     where: { wishId: params.wishId },
     include: {
+      pledge: { select: { giverUserId: true } },
+      wish: { select: { userId: true } },
       messages: {
         orderBy: { createdAt: "asc" },
         include: {
@@ -25,6 +27,15 @@ export async function GET(_request: Request, { params }: Params) {
       }
     }
   });
+
+  if (!conversation) {
+    return NextResponse.json({ conversation: null });
+  }
+
+  // C4: only the wisher or the accepted giver may read messages
+  if (conversation.wish.userId !== user.id && conversation.pledge?.giverUserId !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   return NextResponse.json({ conversation });
 }

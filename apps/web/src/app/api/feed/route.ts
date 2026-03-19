@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 20;
 
@@ -14,7 +17,9 @@ export async function GET(request: Request) {
   const where: any = {
     status: "open",
     visibility: "public",
-    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    // M5: only show wishes from active users
+    user: { status: "active" }
   };
 
   if (category) where.category = category;
@@ -28,6 +33,30 @@ export async function GET(request: Request) {
         ]
       }
     ];
+  }
+
+  // C8/M5: hide wishes from blocked users (works for logged-in users only)
+  try {
+    const currentUser = await getCurrentUser();
+    if (currentUser) {
+      const blocks = await prisma.block.findMany({
+        where: {
+          OR: [
+            { blockerId: currentUser.id },
+            { blockedId: currentUser.id }
+          ]
+        },
+        select: { blockerId: true, blockedId: true }
+      });
+      if (blocks.length > 0) {
+        const blockedIds = blocks.map((b: { blockerId: string; blockedId: string }) =>
+          b.blockerId === currentUser.id ? b.blockedId : b.blockerId
+        );
+        where.userId = { notIn: blockedIds };
+      }
+    }
+  } catch {
+    // non-fatal: if auth check fails, just show unfiltered feed
   }
 
   const wishes = await prisma.wish.findMany({

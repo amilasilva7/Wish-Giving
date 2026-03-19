@@ -1,10 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
-export default function RegisterPage() {
+function RegisterPageInner() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,13 +31,17 @@ export default function RegisterPage() {
       setLoading(false);
       return;
     }
-    const loginUrl = redirect !== "/"
-      ? `/auth/login?redirect=${encodeURIComponent(redirect)}`
+    // M3: prevent open redirect — only allow same-origin paths
+    const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+    const loginUrl = safeRedirect !== "/"
+      ? `/auth/login?redirect=${encodeURIComponent(safeRedirect)}`
       : "/auth/login";
     window.location.href = loginUrl;
   }
 
   return (
+    <>
+    {loading && <PageLoader label="Creating account…" />}
     <div className="max-w-md mx-auto mt-8">
       <div className="card">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Create account</h1>
@@ -75,7 +81,7 @@ export default function RegisterPage() {
           </div>
           {error && <p className="error-msg">{error}</p>}
           <button type="submit" className="btn-primary w-full mt-2" disabled={loading}>
-            {loading ? "Creating account…" : "Sign up"}
+            {loading ? <SparkLoader label="Creating account…" size="sm" /> : "Sign up"}
           </button>
         </form>
         <p className="text-sm text-gray-500 mt-4 text-center">
@@ -86,5 +92,10 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+    </>
   );
+}
+
+export default function RegisterPage() {
+  return <Suspense><RegisterPageInner /></Suspense>;
 }

@@ -2,6 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
 export default function PledgePage() {
   const params = useParams<{ wishId: string }>();
@@ -29,6 +31,8 @@ export default function PledgePage() {
   }
 
   return (
+    <>
+    {loading && <PageLoader label="Sending pledge…" />}
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Pledge to fulfill this wish</h1>
       <div className="card">
@@ -45,12 +49,13 @@ export default function PledgePage() {
           {error && <p className="error-msg">{error}</p>}
           <div className="flex gap-3">
             <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? "Sending…" : "Send pledge"}
+              {loading ? <SparkLoader label="Sending pledge…" size="sm" /> : "Send pledge"}
             </button>
             <button type="button" onClick={() => router.back()} className="btn-secondary">Cancel</button>
           </div>
         </form>
       </div>
     </div>
+    </>
   );
 }

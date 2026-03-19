@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
 type Giver = { id: string; name: string; avatarUrl: string | null; locationCoarse: string | null };
 type Pledge = {
@@ -70,10 +72,14 @@ export default function WishPledgesPage() {
     await load();
   }
 
-  if (loading) return <div className="card text-center py-12 text-gray-400">Loading...</div>;
+  if (loading) return <div className="card text-center py-12 text-orange-400"><SparkLoader label="Loading pledges…" /></div>;
   if (error) return <div className="card text-center py-12 text-red-500">{error}</div>;
 
+  const anyActionLoading = Object.values(actionLoading).some(Boolean);
+
   return (
+    <>
+    {anyActionLoading && <PageLoader label="Processing…" />}
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.push("/wishes")} className="text-gray-400 hover:text-gray-600 text-sm">← Back</button>
@@ -146,7 +152,7 @@ export default function WishPledgesPage() {
                         className="btn-primary text-sm px-3 py-1.5"
                         disabled={actionLoading[pledge.id]}
                       >
-                        {actionLoading[pledge.id] ? "Accepting…" : "Accept"}
+                        {actionLoading[pledge.id] ? <SparkLoader label="Accepting…" size="sm" /> : "Accept"}
                       </button>
                       <button
                         onClick={() => setConfirmDecline(pledge.id)}
@@ -170,7 +176,7 @@ export default function WishPledgesPage() {
                     className="btn-secondary text-sm px-3 py-1.5"
                     disabled={actionLoading[pledge.id]}
                   >
-                    {actionLoading[pledge.id] ? "Marking…" : "Mark fulfilled"}
+                    {actionLoading[pledge.id] ? <SparkLoader label="Marking…" size="sm" /> : "Mark fulfilled"}
                   </button>
                 </div>
               )}
@@ -179,5 +185,6 @@ export default function WishPledgesPage() {
         </ul>
       )}
     </div>
+    </>
   );
 }

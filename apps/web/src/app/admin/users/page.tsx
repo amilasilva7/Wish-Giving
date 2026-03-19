@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import SparkLoader from "@/app/components/SparkLoader";
 
 type User = {
   id: string;
@@ -54,7 +55,7 @@ export default function AdminUsersPage() {
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <div className="card text-center py-12 text-gray-400">Loading…</div>;
+  if (loading) return <div className="card text-center py-12 text-orange-400"><SparkLoader label="Loading users…" /></div>;
   if (error) return <div className="card text-center py-12 text-red-500">{error}</div>;
 
   return (

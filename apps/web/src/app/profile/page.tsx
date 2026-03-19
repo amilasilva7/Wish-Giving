@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
 type User = {
   id: string;
@@ -63,7 +65,7 @@ export default function ProfilePage() {
     setEditing(true);
   }
 
-  if (loading) return <div className="card text-center py-12 text-gray-400">Loading...</div>;
+  if (loading) return <div className="card text-center py-12 text-orange-400"><SparkLoader label="Loading profile…" /></div>;
 
   if (!user) {
     return (
@@ -75,6 +77,8 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
+    {saving && <PageLoader label="Saving profile…" />}
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Your profile</h1>
       {success && <p className="success-msg mb-4">Profile updated successfully.</p>}
@@ -133,12 +137,13 @@ export default function ProfilePage() {
             </div>
             {error && <p className="error-msg">{error}</p>}
             <div className="flex gap-3 pt-2">
-              <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+              <button type="submit" className="btn-primary" disabled={saving}>{saving ? <SparkLoader label="Saving…" size="sm" /> : "Save"}</button>
               <button type="button" onClick={() => setEditing(false)} className="btn-secondary">Cancel</button>
             </div>
           </form>
         )}
       </div>
     </div>
+    </>
   );
 }

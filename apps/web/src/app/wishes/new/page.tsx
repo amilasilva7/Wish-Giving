@@ -2,12 +2,14 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
 export default function NewWishPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState(WISH_CATEGORIES[0]?.id ?? "");
-  const [occasionType, setOccasionType] = useState(OCCASION_TYPES[0]?.id ?? "");
+  const [category, setCategory] = useState<string>(WISH_CATEGORIES[0]?.id ?? "");
+  const [occasionType, setOccasionType] = useState<string>(OCCASION_TYPES[0]?.id ?? "");
   const [visibility, setVisibility] = useState<"public" | "limited" | "private_link">("public");
   const [locationCoarse, setLocationCoarse] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +67,8 @@ export default function NewWishPage() {
   }
 
   return (
+    <>
+    {loading && <PageLoader label="Saving wish…" />}
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Create a wish</h1>
       {draftRestored && (
@@ -118,12 +122,13 @@ export default function NewWishPage() {
           {error && <p className="error-msg">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? "Saving…" : "Save wish"}
+              {loading ? <SparkLoader label="Saving wish…" size="sm" /> : "Save wish"}
             </button>
             <a href="/wishes" className="btn-secondary" onClick={() => localStorage.removeItem("wish_draft")}>Cancel</a>
           </div>
         </form>
       </div>
     </div>
+    </>
   );
 }

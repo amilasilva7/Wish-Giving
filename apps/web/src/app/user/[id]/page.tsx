@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import SparkLoader from "@/app/components/SparkLoader";
+import PageLoader from "@/app/components/PageLoader";
 
 type Wish = { id: string; title: string; category: string; status: string; createdAt: string };
 type User = {
@@ -66,10 +68,12 @@ export default function PublicProfilePage() {
     }
   }
 
-  if (loading) return <div className="card text-center py-12 text-gray-400">Loading…</div>;
+  if (loading) return <div className="card text-center py-12 text-orange-400"><SparkLoader label="Loading profile…" /></div>;
   if (error || !user) return <div className="card text-center py-12 text-gray-500">{error ?? "User not found."}</div>;
 
   return (
+    <>
+    {(blockLoading || reportLoading) && <PageLoader label={blockLoading ? "Updating block…" : "Submitting report…"} />}
     <div className="max-w-2xl mx-auto">
       <div className="card mb-6">
         <div className="flex items-center gap-4 mb-4">
@@ -98,7 +102,7 @@ export default function PublicProfilePage() {
               disabled={blockLoading}
               className="text-xs mr-3 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              {blockLoading ? "Unblocking…" : "Unblock user"}
+              {blockLoading ? <SparkLoader label="Unblocking…" size="sm" /> : "Unblock user"}
             </button>
           ) : confirmBlock ? (
             <div className="flex items-center gap-3 mr-3">
@@ -108,7 +112,7 @@ export default function PublicProfilePage() {
                 disabled={blockLoading}
                 className="text-xs btn-danger px-2 py-1"
               >
-                {blockLoading ? "Blocking…" : "Yes, block"}
+                {blockLoading ? <SparkLoader label="Blocking…" size="sm" /> : "Yes, block"}
               </button>
               <button onClick={() => setConfirmBlock(false)} className="text-xs btn-secondary px-2 py-1">Cancel</button>
             </div>
@@ -133,7 +137,7 @@ export default function PublicProfilePage() {
                 className="input text-sm flex-1"
               />
               <button onClick={submitReport} disabled={reportLoading} className="btn-danger text-sm px-3 py-1.5">
-                {reportLoading ? "Submitting…" : "Submit"}
+                {reportLoading ? <SparkLoader label="Submitting…" size="sm" /> : "Submit"}
               </button>
               <button onClick={() => setReporting(false)} className="btn-secondary text-sm px-3 py-1.5">Cancel</button>
             </div>
@@ -165,5 +169,6 @@ export default function PublicProfilePage() {
         </ul>
       )}
     </div>
+    </>
   );
 }

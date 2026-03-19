@@ -9,7 +9,8 @@ export default function NavAuth() {
   useEffect(() => {
     fetch("/api/auth/me")
       .then(r => r.json())
-      .then(data => setLoggedIn(!!data.user));
+      .then(data => setLoggedIn(!!data.user))
+      .catch(() => setLoggedIn(false));
   }, []);
 
   async function handleLogout() {
