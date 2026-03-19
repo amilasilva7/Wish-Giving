@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import NavAuth from "./components/NavAuth";
 import "./globals.css";
 
 export const metadata = {
@@ -23,9 +24,10 @@ export default function RootLayout({
             <nav className="flex items-center gap-5 text-sm font-medium">
               <Link href="/" className="text-gray-600 hover:text-orange-500 transition-colors">Home</Link>
               <Link href="/wishes" className="text-gray-600 hover:text-orange-500 transition-colors">My Wishes</Link>
+              <Link href="/pledges" className="text-gray-600 hover:text-orange-500 transition-colors">My Pledges</Link>
               <Link href="/wishes/new" className="text-gray-600 hover:text-orange-500 transition-colors">Make a Wish</Link>
               <Link href="/profile" className="text-gray-600 hover:text-orange-500 transition-colors">Profile</Link>
-              <Link href="/auth/login" className="btn-primary text-sm px-3 py-1.5">Login</Link>
+              <NavAuth />
             </nav>
           </div>
         </header>

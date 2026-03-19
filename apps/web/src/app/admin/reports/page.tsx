@@ -74,7 +74,10 @@ export default function AdminReportsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Admin: Reports</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Admin: Reports</h1>
+          <a href="/admin/users" className="btn-secondary text-sm">Manage users</a>
+        </div>
         <button onClick={load} className="btn-secondary text-sm">Refresh</button>
       </div>
       <p className="text-sm text-gray-500 mb-4">Access requires email listed in <code className="bg-gray-100 px-1 rounded">ADMIN_EMAILS</code>.</p>

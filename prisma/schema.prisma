@@ -16,13 +16,17 @@ model User {
   locationCoarse String?
   createdAt    DateTime @default(now())
   status       String   @default("active")
-  emailVerifiedAt DateTime?
-  emailVerifyToken String? @unique
+  emailVerifiedAt      DateTime?
+  emailVerifyToken     String?   @unique
+  resetPasswordToken   String?   @unique
+  resetPasswordExpires DateTime?
 
   wishes       Wish[]   @relation("UserWishes")
   pledgesGiven Pledge[]  @relation("PledgeGiver")
   messagesSent Message[]  @relation("MessageSender")
   reports      Report[]  @relation("ReportReporter")
+  blocksGiven  Block[]   @relation("Blocker")
+  blocksReceived Block[] @relation("Blocked")
 }
 
 model Wish {
@@ -81,6 +85,17 @@ model Message {
   senderUserId    String
   body            String
   createdAt       DateTime     @default(now())
+}
+
+model Block {
+  id          String   @id @default(cuid())
+  blocker     User     @relation("Blocker", fields: [blockerId], references: [id])
+  blockerId   String
+  blocked     User     @relation("Blocked", fields: [blockedId], references: [id])
+  blockedId   String
+  createdAt   DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
 }
 
 model Report {

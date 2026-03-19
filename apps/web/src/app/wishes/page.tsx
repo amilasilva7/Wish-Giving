@@ -34,14 +34,21 @@ export default async function WishesPage() {
           {wishes.map(wish => (
             <li key={wish.id} className="card hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between gap-4">
-                <Link href={`/wishes/${wish.id}`} className="font-semibold text-gray-900 hover:text-orange-500 transition-colors">
-                  {wish.title}
-                </Link>
+                <div>
+                  <Link href={`/wishes/${wish.id}`} className="font-semibold text-gray-900 hover:text-orange-500 transition-colors">
+                    {wish.title}
+                  </Link>
+                  {(wish.status === "pledged" || wish.status === "in_coordination") && (
+                    <Link href={`/wishes/${wish.id}/pledges`} className="ml-3 text-xs text-orange-500 hover:underline font-medium">
+                      View pledges →
+                    </Link>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                     wish.status === "open" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
                   }`}>
-                    {wish.status}
+                    {wish.status.replace("_", " ")}
                   </span>
                   <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
                     {wish.visibility}

@@ -1,37 +1,60 @@
+"use client";
+
+import { FormEvent, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 
-type SearchParams = {
-  category?: string;
-  occasionType?: string;
+type Wish = {
+  id: string;
+  title: string;
+  category: string;
+  user: { name: string; locationCoarse: string | null };
 };
 
-export default async function HomePage({
-  searchParams
-}: {
-  searchParams: SearchParams;
-}) {
-  const where: any = {
-    status: "open",
-    visibility: "public"
-  };
-  if (searchParams.category) where.category = searchParams.category;
-  if (searchParams.occasionType) where.occasionType = searchParams.occasionType;
+export default function HomePage() {
+  const [wishes, setWishes] = useState<Wish[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [category, setCategory] = useState("");
+  const [occasionType, setOccasionType] = useState("");
+  const [q, setQ] = useState("");
 
-  const wishes = await prisma.wish.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: {
-      user: {
-        select: {
-          name: true,
-          locationCoarse: true
-        }
-      }
+  async function fetchWishes(params: { category?: string; occasionType?: string; q?: string; cursor?: string }, append = false) {
+    const url = new URL("/api/feed", window.location.origin);
+    if (params.category) url.searchParams.set("category", params.category);
+    if (params.occasionType) url.searchParams.set("occasionType", params.occasionType);
+    if (params.q) url.searchParams.set("q", params.q);
+    if (params.cursor) url.searchParams.set("cursor", params.cursor);
+
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    if (append) {
+      setWishes(prev => [...prev, ...data.wishes]);
+    } else {
+      setWishes(data.wishes);
     }
-  });
+    setNextCursor(data.nextCursor);
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    fetchWishes({}).finally(() => setLoading(false));
+  }, []);
+
+  async function handleFilter(e: FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    await fetchWishes({ category, occasionType, q });
+    setLoading(false);
+  }
+
+  async function handleLoadMore() {
+    if (!nextCursor) return;
+    setLoadingMore(true);
+    await fetchWishes({ category, occasionType, q, cursor: nextCursor }, true);
+    setLoadingMore(false);
+  }
 
   return (
     <div>
@@ -50,20 +73,30 @@ export default async function HomePage({
 
       {/* Filters */}
       <div className="card mb-8">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Filter wishes</h2>
-        <form className="flex flex-wrap gap-4 items-end">
-          <div className="form-field flex-1 min-w-40">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Search & filter</h2>
+        <form onSubmit={handleFilter} className="flex flex-wrap gap-4 items-end">
+          <div className="form-field flex-1 min-w-48">
+            <label className="label">Search</label>
+            <input
+              type="text"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder="Search wishes…"
+              className="input"
+            />
+          </div>
+          <div className="form-field flex-1 min-w-36">
             <label className="label">Category</label>
-            <select name="category" defaultValue={searchParams.category ?? ""} className="input">
+            <select name="category" value={category} onChange={e => setCategory(e.target.value)} className="input">
               <option value="">All categories</option>
               {WISH_CATEGORIES.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.label}</option>
               ))}
             </select>
           </div>
-          <div className="form-field flex-1 min-w-40">
+          <div className="form-field flex-1 min-w-36">
             <label className="label">Occasion</label>
-            <select name="occasionType" defaultValue={searchParams.occasionType ?? ""} className="input">
+            <select name="occasionType" value={occasionType} onChange={e => setOccasionType(e.target.value)} className="input">
               <option value="">All occasions</option>
               {OCCASION_TYPES.map(o => (
                 <option key={o.id} value={o.id}>{o.label}</option>
@@ -78,35 +111,46 @@ export default async function HomePage({
       <section>
         <h2 className="text-xl font-semibold text-gray-800 mb-4">
           Open wishes
-          <span className="ml-2 text-sm font-normal text-gray-400">({wishes.length})</span>
+          <span className="ml-2 text-sm font-normal text-gray-400">({wishes.length}{nextCursor ? "+" : ""})</span>
         </h2>
-        {wishes.length === 0 ? (
+        {loading ? (
+          <div className="card text-center py-12 text-gray-400">Loading…</div>
+        ) : wishes.length === 0 ? (
           <div className="card text-center py-12 text-gray-400">
             No wishes found. <Link href="/wishes/new" className="text-orange-500 hover:underline">Be the first!</Link>
           </div>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {wishes.map(wish => (
-              <li key={wish.id} className="card hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <Link href={`/wish/${wish.id}`} className="text-lg font-semibold text-gray-900 hover:text-orange-500 transition-colors">
-                      {wish.title}
-                    </Link>
-                    <p className="text-sm text-gray-500 mt-1">
-                      by <span className="font-medium text-gray-700">{wish.user.name}</span>
-                      {wish.user.locationCoarse && (
-                        <span className="ml-1 text-gray-400">· {wish.user.locationCoarse}</span>
-                      )}
-                    </p>
+          <>
+            <ul className="flex flex-col gap-3">
+              {wishes.map(wish => (
+                <li key={wish.id} className="card hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <Link href={`/wish/${wish.id}`} className="text-lg font-semibold text-gray-900 hover:text-orange-500 transition-colors">
+                        {wish.title}
+                      </Link>
+                      <p className="text-sm text-gray-500 mt-1">
+                        by <Link href={`/user/${(wish as any).userId ?? ""}`} className="font-medium text-gray-700 hover:text-orange-500">{wish.user.name}</Link>
+                        {wish.user.locationCoarse && (
+                          <span className="ml-1 text-gray-400">· {wish.user.locationCoarse}</span>
+                        )}
+                      </p>
+                    </div>
+                    <span className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full whitespace-nowrap font-medium">
+                      {wish.category}
+                    </span>
                   </div>
-                  <span className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full whitespace-nowrap font-medium">
-                    {wish.category}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+            {nextCursor && (
+              <div className="text-center mt-6">
+                <button onClick={handleLoadMore} disabled={loadingMore} className="btn-secondary">
+                  {loadingMore ? "Loading…" : "Load more"}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

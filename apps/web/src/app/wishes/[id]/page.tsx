@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 
 type Wish = {
@@ -12,6 +13,7 @@ type Wish = {
   occasionType: string;
   visibility: string;
   locationCoarse: string | null;
+  expiresAt: string | null;
 };
 
 export default function EditWishPage() {
@@ -20,6 +22,7 @@ export default function EditWishPage() {
   const [loading, setLoading] = useState(true);
   const [wish, setWish] = useState<Wish | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function fetchWish() {
@@ -122,6 +125,27 @@ export default function EditWishPage() {
                 className="input" />
             </div>
           </div>
+          {wish.expiresAt && new Date(wish.expiresAt) < new Date() && (
+            <p className="error-msg">This wish has expired. Update the expiry date or delete it.</p>
+          )}
+          {wish.visibility === "private_link" && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
+              <span className="text-sm text-orange-700">
+                Private link: <span className="font-mono text-xs break-all">{typeof window !== "undefined" ? `${window.location.origin}/wish/${wish.id}` : `/wish/${wish.id}`}</span>
+              </span>
+              <button
+                type="button"
+                className="text-xs btn-secondary px-2 py-1 flex-shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/wish/${wish.id}`);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          )}
           {error && <p className="error-msg">{error}</p>}
           <div className="flex items-center justify-between pt-2">
             <div className="flex gap-3">
