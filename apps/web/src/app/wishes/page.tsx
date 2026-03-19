@@ -1,11 +1,50 @@
+"use client";
+
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
-export default async function WishesPage() {
-  const user = await getCurrentUser();
+type Wish = {
+  id: string;
+  title: string;
+  status: string;
+  visibility: string;
+};
 
-  if (!user) {
+const FLASH_MESSAGES: Record<string, string> = {
+  wish_created: "Your wish is live! People can now see and pledge to it.",
+  wish_updated: "Your wish has been updated.",
+  wish_deleted: "Your wish has been deleted.",
+};
+
+export default function WishesPage() {
+  const searchParams = useSearchParams();
+  const flash = searchParams.get("flash");
+  const [banner, setBanner] = useState<string | null>(null);
+  const [wishes, setWishes] = useState<Wish[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(true);
+
+  useEffect(() => {
+    if (flash && FLASH_MESSAGES[flash]) {
+      setBanner(FLASH_MESSAGES[flash]);
+      const t = setTimeout(() => setBanner(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [flash]);
+
+  useEffect(() => {
+    fetch("/api/wishes")
+      .then(r => {
+        if (r.status === 401) { setAuthed(false); setLoading(false); return null; }
+        return r.json();
+      })
+      .then(data => {
+        if (data) { setWishes(data.wishes ?? []); setLoading(false); }
+      });
+  }, []);
+
+  if (!authed) {
     return (
       <div className="card text-center py-12">
         <p className="text-gray-500 mb-4">You must be signed in to manage wishes.</p>
@@ -14,18 +53,16 @@ export default async function WishesPage() {
     );
   }
 
-  const wishes = await prisma.wish.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" }
-  });
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Your wishes</h1>
         <Link href="/wishes/new" className="btn-primary">+ New wish</Link>
       </div>
-      {wishes.length === 0 ? (
+      {banner && <p className="success-msg mb-4">{banner}</p>}
+      {loading ? (
+        <div className="card text-center py-12 text-gray-400">Loading…</div>
+      ) : wishes.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
           You haven't made any wishes yet.
         </div>

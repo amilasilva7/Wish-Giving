@@ -8,10 +8,12 @@ export default function PledgePage() {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setLoading(true);
     const res = await fetch("/api/pledges", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -20,9 +22,10 @@ export default function PledgePage() {
     const data = await res.json();
     if (!res.ok) {
       setError(data.error ?? "Failed to create pledge");
+      setLoading(false);
       return;
     }
-    router.push("/");
+    router.push("/pledges?flash=pledged");
   }
 
   return (
@@ -41,7 +44,9 @@ export default function PledgePage() {
           </div>
           {error && <p className="error-msg">{error}</p>}
           <div className="flex gap-3">
-            <button type="submit" className="btn-primary">Send pledge</button>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? "Sending…" : "Send pledge"}
+            </button>
             <button type="button" onClick={() => router.back()} className="btn-secondary">Cancel</button>
           </div>
         </form>

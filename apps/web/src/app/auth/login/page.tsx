@@ -8,6 +8,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
@@ -16,6 +17,7 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setLoading(true);
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -24,6 +26,7 @@ export default function LoginPage() {
     if (!res.ok) {
       const data = await res.json();
       setError(data.error ?? "Login failed");
+      setLoading(false);
       return;
     }
     window.location.href = redirect;
@@ -62,7 +65,9 @@ export default function LoginPage() {
             />
           </div>
           {error && <p className="error-msg">{error}</p>}
-          <button type="submit" className="btn-primary w-full mt-2">Sign in</button>
+          <button type="submit" className="btn-primary w-full mt-2" disabled={loading}>
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
         </form>
         <p className="text-sm text-gray-500 mt-4 text-center">
           No account?{" "}

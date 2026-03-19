@@ -55,6 +55,12 @@ export default function ProfilePage() {
     setUser(data.user);
     setEditing(false);
     setSuccess(true);
+    setTimeout(() => setSuccess(false), 4000);
+  }
+
+  function handleEditClick() {
+    setSuccess(false);
+    setEditing(true);
   }
 
   if (loading) return <div className="card text-center py-12 text-gray-400">Loading...</div>;
@@ -105,7 +111,7 @@ export default function ProfilePage() {
             </div>
             <div className="mt-6 pt-4 border-t border-gray-100 flex gap-3">
               <Link href="/wishes" className="btn-secondary inline-block">View my wishes</Link>
-              <button onClick={() => setEditing(true)} className="btn-primary">Edit profile</button>
+              <button onClick={handleEditClick} className="btn-primary">Edit profile</button>
             </div>
           </>
         ) : (
@@ -127,7 +133,7 @@ export default function ProfilePage() {
             </div>
             {error && <p className="error-msg">{error}</p>}
             <div className="flex gap-3 pt-2">
-              <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+              <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving…" : "Save"}</button>
               <button type="button" onClick={() => setEditing(false)} className="btn-secondary">Cancel</button>
             </div>
           </form>

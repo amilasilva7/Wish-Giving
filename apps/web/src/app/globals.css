@@ -30,4 +30,7 @@
   .success-msg {
     @apply text-green-700 text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2;
   }
+  .info-msg {
+    @apply text-blue-700 bg-blue-50 border border-blue-200 text-sm rounded-lg px-4 py-2;
+  }
 }

@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
@@ -16,6 +17,7 @@ export default function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setLoading(true);
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -24,6 +26,7 @@ export default function RegisterPage() {
     const data = await res.json();
     if (!res.ok) {
       setError(data.error ?? "Registration failed");
+      setLoading(false);
       return;
     }
     const loginUrl = redirect !== "/"
@@ -71,7 +74,9 @@ export default function RegisterPage() {
             />
           </div>
           {error && <p className="error-msg">{error}</p>}
-          <button type="submit" className="btn-primary w-full mt-2">Sign up</button>
+          <button type="submit" className="btn-primary w-full mt-2" disabled={loading}>
+            {loading ? "Creating account…" : "Sign up"}
+          </button>
         </form>
         <p className="text-sm text-gray-500 mt-4 text-center">
           Already have an account?{" "}

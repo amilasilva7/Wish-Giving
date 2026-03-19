@@ -22,7 +22,11 @@ export default function PublicProfilePage() {
   const [reporting, setReporting] = useState(false);
   const [reportDone, setReportDone] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const [blockSuccess, setBlockSuccess] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
 
   useEffect(() => {
     fetch(`/api/users/${id}`)
@@ -33,13 +37,33 @@ export default function PublicProfilePage() {
 
   async function submitReport() {
     if (!reportReason.trim()) return;
+    setReportLoading(true);
     await fetch("/api/reports", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ targetType: "user", targetId: id, reason: reportReason })
     });
+    setReportLoading(false);
     setReporting(false);
     setReportDone(true);
+  }
+
+  async function handleBlock() {
+    setBlockLoading(true);
+    await fetch("/api/block", {
+      method: blocked ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blockedUserId: id })
+    });
+    setBlockLoading(false);
+    setConfirmBlock(false);
+    if (!blocked) {
+      setBlocked(true);
+      setBlockSuccess(true);
+    } else {
+      setBlocked(false);
+      setBlockSuccess(false);
+    }
   }
 
   if (loading) return <div className="card text-center py-12 text-gray-400">Loading…</div>;
@@ -62,20 +86,41 @@ export default function PublicProfilePage() {
             <p className="text-xs text-gray-400">Member since {new Date(user.createdAt).toLocaleDateString()}</p>
           </div>
         </div>
+
+        {blockSuccess && (
+          <p className="success-msg mb-3">User blocked. You won't see their content.</p>
+        )}
+
         <div className="border-t border-gray-100 pt-4 flex items-center gap-3">
-          <button
-            onClick={async () => {
-              await fetch("/api/block", {
-                method: blocked ? "DELETE" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ blockedUserId: id })
-              });
-              setBlocked(!blocked);
-            }}
-            className={`text-xs mr-3 transition-colors ${blocked ? "text-gray-400 hover:text-gray-600" : "text-red-400 hover:text-red-600"}`}
-          >
-            {blocked ? "Unblock user" : "Block user"}
-          </button>
+          {blocked ? (
+            <button
+              onClick={handleBlock}
+              disabled={blockLoading}
+              className="text-xs mr-3 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {blockLoading ? "Unblocking…" : "Unblock user"}
+            </button>
+          ) : confirmBlock ? (
+            <div className="flex items-center gap-3 mr-3">
+              <span className="text-xs text-gray-600">Block this user?</span>
+              <button
+                onClick={handleBlock}
+                disabled={blockLoading}
+                className="text-xs btn-danger px-2 py-1"
+              >
+                {blockLoading ? "Blocking…" : "Yes, block"}
+              </button>
+              <button onClick={() => setConfirmBlock(false)} className="text-xs btn-secondary px-2 py-1">Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmBlock(true)}
+              className="text-xs mr-3 text-red-400 hover:text-red-600 transition-colors"
+            >
+              Block user
+            </button>
+          )}
+
           {reportDone ? (
             <span className="text-xs text-green-600">Report submitted. Thank you.</span>
           ) : reporting ? (
@@ -87,7 +132,9 @@ export default function PublicProfilePage() {
                 placeholder="Reason for report…"
                 className="input text-sm flex-1"
               />
-              <button onClick={submitReport} className="btn-danger text-sm px-3 py-1.5">Submit</button>
+              <button onClick={submitReport} disabled={reportLoading} className="btn-danger text-sm px-3 py-1.5">
+                {reportLoading ? "Submitting…" : "Submit"}
+              </button>
               <button onClick={() => setReporting(false)} className="btn-secondary text-sm px-3 py-1.5">Cancel</button>
             </div>
           ) : (

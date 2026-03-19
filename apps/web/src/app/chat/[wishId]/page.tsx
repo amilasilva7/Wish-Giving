@@ -1,26 +1,38 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent, useRef } from "react";
 import { useParams } from "next/navigation";
+
+type Message = {
+  id: string;
+  body: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    name: string;
+  };
+};
 
 type Conversation = {
   id: string;
-  messages: {
-    id: string;
-    body: string;
-    createdAt: string;
-    sender: {
-      id: string;
-      name: string;
-    };
-  }[];
+  messages: Message[];
 };
+
+function relativeTime(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+  return `${Math.floor(diff / 86400)} d ago`;
+}
 
 export default function ChatPage() {
   const params = useParams<{ wishId: string }>();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   async function ensureConversation() {
     await fetch(`/api/conversations/${params.wishId}`, { method: "POST" });
@@ -40,16 +52,22 @@ export default function ChatPage() {
     })();
   }, [params.wishId]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversation?.messages]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     if (!conversation) return;
+    setSending(true);
     const res = await fetch(`/api/messages/${conversation.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body })
     });
     const data = await res.json();
+    setSending(false);
     if (!res.ok) {
       setError(data.error ?? "Failed to send");
       return;
@@ -73,12 +91,16 @@ export default function ChatPage() {
                     {m.sender.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">{m.sender.name}</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-xs font-semibold text-gray-700">{m.sender.name}</p>
+                      <span className="text-xs text-gray-400">{relativeTime(m.createdAt)}</span>
+                    </div>
                     <p className="text-sm text-gray-600">{m.body}</p>
                   </div>
                 </div>
               ))
             )}
+            <div ref={messagesEndRef} />
           </div>
           <div className="border-t border-gray-100 pt-4">
             <form onSubmit={handleSubmit} className="flex gap-3">
@@ -90,7 +112,9 @@ export default function ChatPage() {
                 placeholder="Type a message..."
                 required
               />
-              <button type="submit" className="btn-primary self-end">Send</button>
+              <button type="submit" className="btn-primary self-end" disabled={sending}>
+                {sending ? "Sending…" : "Send"}
+              </button>
             </form>
             {error && <p className="error-msg mt-2">{error}</p>}
           </div>

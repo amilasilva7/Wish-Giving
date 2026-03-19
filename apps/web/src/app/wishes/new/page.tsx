@@ -11,6 +11,8 @@ export default function NewWishPage() {
   const [visibility, setVisibility] = useState<"public" | "limited" | "private_link">("public");
   const [locationCoarse, setLocationCoarse] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("wish_draft");
@@ -25,6 +27,7 @@ export default function NewWishPage() {
           setOccasionType(draft.occasionType ?? OCCASION_TYPES[0]?.id ?? "");
           setVisibility(draft.visibility ?? "public");
           setLocationCoarse(draft.locationCoarse ?? "");
+          setDraftRestored(true);
         } else {
           localStorage.removeItem("wish_draft");
         }
@@ -37,6 +40,7 @@ export default function NewWishPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setLoading(true);
     const res = await fetch("/api/wishes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -53,15 +57,19 @@ export default function NewWishPage() {
     if (!res.ok) {
       const data = await res.json();
       setError(data.error ?? "Failed to create wish");
+      setLoading(false);
       return;
     }
     localStorage.removeItem("wish_draft");
-    window.location.href = "/wishes";
+    window.location.href = "/wishes?flash=wish_created";
   }
 
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Create a wish</h1>
+      {draftRestored && (
+        <p className="info-msg mb-4">We restored your draft from your last session.</p>
+      )}
       <div className="card">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="form-field">
@@ -109,7 +117,9 @@ export default function NewWishPage() {
           </div>
           {error && <p className="error-msg">{error}</p>}
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="btn-primary">Save wish</button>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? "Saving…" : "Save wish"}
+            </button>
             <a href="/wishes" className="btn-secondary" onClick={() => localStorage.removeItem("wish_draft")}>Cancel</a>
           </div>
         </form>

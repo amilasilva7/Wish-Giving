@@ -20,9 +20,12 @@ export default function EditWishPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [wish, setWish] = useState<Wish | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchWish() {
@@ -43,6 +46,7 @@ export default function EditWishPage() {
     e.preventDefault();
     if (!wish) return;
     setError(null);
+    setSaving(true);
     const res = await fetch(`/api/wishes/${wish.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -51,19 +55,23 @@ export default function EditWishPage() {
     if (!res.ok) {
       const data = await res.json();
       setError(data.error ?? "Failed to update wish");
+      setSaving(false);
       return;
     }
-    router.push("/wishes");
+    router.push("/wishes?flash=wish_updated");
   }
 
   async function handleDelete() {
     if (!wish) return;
+    setDeleting(true);
     const res = await fetch(`/api/wishes/${wish.id}`, { method: "DELETE" });
     if (!res.ok) {
       setError("Failed to delete wish");
+      setDeleting(false);
+      setConfirmDelete(false);
       return;
     }
-    router.push("/wishes");
+    router.push("/wishes?flash=wish_deleted");
   }
 
   if (loading) {
@@ -149,10 +157,24 @@ export default function EditWishPage() {
           {error && <p className="error-msg">{error}</p>}
           <div className="flex items-center justify-between pt-2">
             <div className="flex gap-3">
-              <button type="submit" className="btn-primary">Save changes</button>
+              <button type="submit" className="btn-primary" disabled={saving}>
+                {saving ? "Saving…" : "Save changes"}
+              </button>
               <button type="button" onClick={() => router.push("/wishes")} className="btn-secondary">Cancel</button>
             </div>
-            <button type="button" onClick={handleDelete} className="btn-danger">Delete wish</button>
+            {!confirmDelete ? (
+              <button type="button" className="btn-danger" onClick={() => setConfirmDelete(true)}>
+                Delete wish
+              </button>
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600">Delete this wish permanently?</span>
+                <button type="button" className="btn-danger" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? "Deleting…" : "Yes, delete"}
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setConfirmDelete(false)}>Cancel</button>
+              </div>
+            )}
           </div>
         </form>
       </div>

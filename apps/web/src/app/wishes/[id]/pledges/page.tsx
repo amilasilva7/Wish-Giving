@@ -31,6 +31,9 @@ export default function WishPledgesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [inlineSuccess, setInlineSuccess] = useState<Record<string, string>>({});
+  const [confirmDecline, setConfirmDecline] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch(`/api/wishes/${id}/pledges`);
@@ -49,16 +52,21 @@ export default function WishPledgesPage() {
 
   async function doAction(pledgeId: string, action: "accept" | "decline" | "mark_fulfilled") {
     setActionError(null);
+    setActionLoading(prev => ({ ...prev, [pledgeId]: true }));
     const res = await fetch(`/api/pledges/${pledgeId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action })
     });
+    setActionLoading(prev => ({ ...prev, [pledgeId]: false }));
     if (!res.ok) {
       const data = await res.json();
       setActionError(data.error ?? "Action failed");
       return;
     }
+    const successMsg = action === "accept" ? "Accepted." : action === "decline" ? "Declined." : "Marked as fulfilled.";
+    setInlineSuccess(prev => ({ ...prev, [pledgeId]: successMsg }));
+    setTimeout(() => setInlineSuccess(prev => { const next = { ...prev }; delete next[pledgeId]; return next; }), 3000);
     await load();
   }
 
@@ -113,14 +121,42 @@ export default function WishPledgesPage() {
                 </p>
               )}
 
+              {inlineSuccess[pledge.id] && (
+                <p className="success-msg mb-2">{inlineSuccess[pledge.id]}</p>
+              )}
+
               {pledge.status === "pending" && (
-                <div className="flex gap-2 pt-2 border-t border-gray-100">
-                  <button onClick={() => doAction(pledge.id, "accept")} className="btn-primary text-sm px-3 py-1.5">
-                    Accept
-                  </button>
-                  <button onClick={() => doAction(pledge.id, "decline")} className="btn-secondary text-sm px-3 py-1.5">
-                    Decline
-                  </button>
+                <div className="pt-2 border-t border-gray-100">
+                  {confirmDecline === pledge.id ? (
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-600">Really decline this pledge?</span>
+                      <button
+                        onClick={() => { setConfirmDecline(null); doAction(pledge.id, "decline"); }}
+                        className="btn-danger text-sm px-3 py-1.5"
+                        disabled={actionLoading[pledge.id]}
+                      >
+                        Yes
+                      </button>
+                      <button onClick={() => setConfirmDecline(null)} className="btn-secondary text-sm px-3 py-1.5">Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => doAction(pledge.id, "accept")}
+                        className="btn-primary text-sm px-3 py-1.5"
+                        disabled={actionLoading[pledge.id]}
+                      >
+                        {actionLoading[pledge.id] ? "Accepting…" : "Accept"}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDecline(pledge.id)}
+                        className="btn-secondary text-sm px-3 py-1.5"
+                        disabled={actionLoading[pledge.id]}
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -129,8 +165,12 @@ export default function WishPledgesPage() {
                   <Link href={`/chat/${wish?.id}`} className="btn-primary text-sm px-3 py-1.5 inline-block">
                     Open chat
                   </Link>
-                  <button onClick={() => doAction(pledge.id, "mark_fulfilled")} className="btn-secondary text-sm px-3 py-1.5">
-                    Mark fulfilled
+                  <button
+                    onClick={() => doAction(pledge.id, "mark_fulfilled")}
+                    className="btn-secondary text-sm px-3 py-1.5"
+                    disabled={actionLoading[pledge.id]}
+                  >
+                    {actionLoading[pledge.id] ? "Marking…" : "Mark fulfilled"}
                   </button>
                 </div>
               )}

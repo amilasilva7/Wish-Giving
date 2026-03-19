@@ -14,11 +14,14 @@ type Wish = {
 export default function HomePage() {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [occasionType, setOccasionType] = useState("");
   const [q, setQ] = useState("");
+  const [fetchError, setFetchError] = useState(false);
+  const [hasFiltered, setHasFiltered] = useState(false);
 
   async function fetchWishes(params: { category?: string; occasionType?: string; q?: string; cursor?: string }, append = false) {
     const url = new URL("/api/feed", window.location.origin);
@@ -28,6 +31,11 @@ export default function HomePage() {
     if (params.cursor) url.searchParams.set("cursor", params.cursor);
 
     const res = await fetch(url.toString());
+    if (!res.ok) {
+      setFetchError(true);
+      return;
+    }
+    setFetchError(false);
     const data = await res.json();
     if (append) {
       setWishes(prev => [...prev, ...data.wishes]);
@@ -44,9 +52,10 @@ export default function HomePage() {
 
   async function handleFilter(e: FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setSearching(true);
+    setHasFiltered(true);
     await fetchWishes({ category, occasionType, q });
-    setLoading(false);
+    setSearching(false);
   }
 
   async function handleLoadMore() {
@@ -103,7 +112,9 @@ export default function HomePage() {
               ))}
             </select>
           </div>
-          <button type="submit" className="btn-primary">Apply</button>
+          <button type="submit" className="btn-primary" disabled={searching}>
+            {searching ? "Searching…" : "Search"}
+          </button>
         </form>
       </div>
 
@@ -115,9 +126,25 @@ export default function HomePage() {
         </h2>
         {loading ? (
           <div className="card text-center py-12 text-gray-400">Loading…</div>
+        ) : fetchError ? (
+          <div className="error-msg text-center py-12">
+            Failed to load wishes. Please try refreshing the page.
+          </div>
         ) : wishes.length === 0 ? (
           <div className="card text-center py-12 text-gray-400">
-            No wishes found. <Link href="/wishes/new" className="text-orange-500 hover:underline">Be the first!</Link>
+            {hasFiltered ? (
+              <>
+                No wishes match your search. Try different filters or{" "}
+                <button
+                  className="text-orange-500 hover:underline"
+                  onClick={() => { setCategory(""); setOccasionType(""); setQ(""); setHasFiltered(false); setLoading(true); fetchWishes({}).finally(() => setLoading(false)); }}
+                >
+                  browse all wishes
+                </button>.
+              </>
+            ) : (
+              <>No wishes found. <Link href="/wishes/new" className="text-orange-500 hover:underline">Be the first!</Link></>
+            )}
           </div>
         ) : (
           <>

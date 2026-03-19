@@ -1,6 +1,16 @@
-import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+type Pledge = {
+  id: string;
+  status: string;
+  message: string | null;
+  expiresAt: string | null;
+  wish: { id: string; title: string; userId: string };
+};
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-50 text-yellow-700",
@@ -10,10 +20,34 @@ const STATUS_COLORS: Record<string, string> = {
   fulfilled: "bg-green-50 text-green-700"
 };
 
-export default async function MyPledgesPage() {
-  const user = await getCurrentUser();
+export default function MyPledgesPage() {
+  const searchParams = useSearchParams();
+  const flash = searchParams.get("flash");
+  const [banner, setBanner] = useState<string | null>(null);
+  const [pledges, setPledges] = useState<Pledge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(true);
 
-  if (!user) {
+  useEffect(() => {
+    if (flash === "pledged") {
+      setBanner("Your pledge has been sent! The wisher will be notified.");
+      const t = setTimeout(() => setBanner(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [flash]);
+
+  useEffect(() => {
+    fetch("/api/pledges")
+      .then(r => {
+        if (r.status === 401) { setAuthed(false); setLoading(false); return null; }
+        return r.json();
+      })
+      .then(data => {
+        if (data) { setPledges(data.pledges ?? []); setLoading(false); }
+      });
+  }, []);
+
+  if (!authed) {
     return (
       <div className="card text-center py-12">
         <p className="text-gray-500 mb-4">You must be signed in to view your pledges.</p>
@@ -22,18 +56,13 @@ export default async function MyPledgesPage() {
     );
   }
 
-  const pledges = await prisma.pledge.findMany({
-    where: { giverUserId: user.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      wish: { select: { id: true, title: true, userId: true } }
-    }
-  });
-
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">My pledges</h1>
-      {pledges.length === 0 ? (
+      {banner && <p className="success-msg mb-4">{banner}</p>}
+      {loading ? (
+        <div className="card text-center py-12 text-gray-400">Loading…</div>
+      ) : pledges.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
           You haven't pledged to any wishes yet.{" "}
           <Link href="/" className="text-orange-500 hover:underline">Browse wishes</Link>
