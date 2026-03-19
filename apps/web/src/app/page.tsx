@@ -4,9 +4,11 @@ import { FormEvent, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 import SparkLoader from "@/app/components/SparkLoader";
+import FavouriteButton from "@/app/components/FavouriteButton";
 
 type Wish = {
   id: string;
+  userId: string;
   title: string;
   category: string;
   user: { name: string; locationCoarse: string | null };
@@ -23,6 +25,7 @@ export default function HomePage() {
   const [q, setQ] = useState("");
   const [fetchError, setFetchError] = useState(false);
   const [hasFiltered, setHasFiltered] = useState(false);
+  const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
 
   async function fetchWishes(params: { category?: string; occasionType?: string; q?: string; cursor?: string }, append = false) {
     const url = new URL("/api/feed", window.location.origin);
@@ -49,6 +52,10 @@ export default function HomePage() {
   useEffect(() => {
     setLoading(true);
     fetchWishes({}).finally(() => setLoading(false));
+    fetch("/api/favourites")
+      .then(r => r.ok ? r.json() : { favourites: [] })
+      .then(data => setFavouriteIds(new Set((data.favourites as { id: string }[]).map(w => w.id))))
+      .catch(() => {});
   }, []);
 
   async function handleFilter(e: FormEvent) {
@@ -155,20 +162,27 @@ export default function HomePage() {
               {wishes.map(wish => (
                 <li key={wish.id} className="card hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <Link href={`/wish/${wish.id}`} className="text-lg font-semibold text-gray-900 hover:text-orange-500 transition-colors">
                         {wish.title}
                       </Link>
                       <p className="text-sm text-gray-500 mt-1">
-                        by <Link href={`/user/${(wish as any).userId ?? ""}`} className="font-medium text-gray-700 hover:text-orange-500">{wish.user.name}</Link>
+                        by <Link href={`/user/${wish.userId}`} className="font-medium text-gray-700 hover:text-orange-500">{wish.user.name}</Link>
                         {wish.user.locationCoarse && (
                           <span className="ml-1 text-gray-400">· {wish.user.locationCoarse}</span>
                         )}
                       </p>
                     </div>
-                    <span className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full whitespace-nowrap font-medium">
-                      {wish.category}
-                    </span>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full whitespace-nowrap font-medium">
+                        {wish.category}
+                      </span>
+                      <FavouriteButton
+                        wishId={wish.id}
+                        initialFavourited={favouriteIds.has(wish.id)}
+                        size="sm"
+                      />
+                    </div>
                   </div>
                 </li>
               ))}

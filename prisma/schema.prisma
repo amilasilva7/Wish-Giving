@@ -27,6 +27,7 @@ model User {
   reports      Report[]  @relation("ReportReporter")
   blocksGiven  Block[]   @relation("Blocker")
   blocksReceived Block[] @relation("Blocked")
+  favourites   Favourite[]
 }
 
 model Wish {
@@ -48,6 +49,7 @@ model Wish {
 
   pledges         Pledge[]
   conversations   Conversation[]
+  favourites      Favourite[]
 
   @@index([status, visibility, category])
 }
@@ -96,6 +98,17 @@ model Block {
   createdAt   DateTime @default(now())
 
   @@unique([blockerId, blockedId])
+}
+
+model Favourite {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  wish      Wish     @relation(fields: [wishId], references: [id])
+  wishId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, wishId])
 }
 
 model Report {
