@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wish
+      POSTGRES_PASSWORD: wish_password
+      POSTGRES_DB: wish_app
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://wish:wish_password@db:5432/wish_app
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: dev-secret-change-me
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./package.json:/app/package.json
+    ports:
+      - "3000:3000"
+    command: ["sh", "-c", "npx prisma db push --accept-data-loss && npm run dev --workspace apps/web"]
+
+volumes:
+  db_data:
+
