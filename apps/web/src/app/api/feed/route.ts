@@ -67,7 +67,8 @@ export async function GET(request: Request) {
     include: {
       user: {
         select: { name: true, locationCoarse: true }
-      }
+      },
+      _count: { select: { favourites: true } }
     }
   });
 

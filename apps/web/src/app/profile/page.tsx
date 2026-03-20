@@ -22,6 +22,7 @@ type FavWish = {
   userId: string;
   status: string;
   user: { name: string };
+  _count: { favourites: number };
 };
 
 export default function ProfilePage() {
@@ -186,6 +187,7 @@ export default function ProfilePage() {
                     <FavouriteButton
                       wishId={wish.id}
                       initialFavourited={true}
+                      initialCount={wish._count.favourites}
                       size="sm"
                       onToggle={(isFav) => {
                         if (!isFav) setFavourites(prev => prev.filter(w => w.id !== wish.id));

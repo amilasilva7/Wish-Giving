@@ -18,7 +18,8 @@ export async function GET() {
           category: true,
           userId: true,
           status: true,
-          user: { select: { name: true } }
+          user: { select: { name: true } },
+          _count: { select: { favourites: true } }
         }
       }
     },

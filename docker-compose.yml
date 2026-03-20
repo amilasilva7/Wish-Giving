@@ -26,6 +26,7 @@ services:
     volumes:
       - ./apps/web:/app/apps/web
       - ./package.json:/app/package.json
+      - ./prisma:/app/prisma
     ports:
       - "3000:3000"
     command: ["sh", "-c", "npx prisma db push --accept-data-loss && npm run dev --workspace apps/web"]

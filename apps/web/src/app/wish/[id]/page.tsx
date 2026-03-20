@@ -21,7 +21,8 @@ export default async function WishDetailPage({ params }: Params) {
             name: true,
             locationCoarse: true
           }
-        }
+        },
+        _count: { select: { favourites: true } }
       }
     }),
     getCurrentUser()
@@ -54,7 +55,7 @@ export default async function WishDetailPage({ params }: Params) {
             <span className="text-xs bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-medium whitespace-nowrap">
               {wish.category}
             </span>
-            <FavouriteButton wishId={wish.id} initialFavourited={isFavourited} />
+            <FavouriteButton wishId={wish.id} initialFavourited={isFavourited} initialCount={wish._count.favourites} />
           </div>
         </div>
         <p className="text-gray-600 leading-relaxed mb-6">{wish.description}</p>

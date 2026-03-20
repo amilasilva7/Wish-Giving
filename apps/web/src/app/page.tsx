@@ -12,6 +12,7 @@ type Wish = {
   title: string;
   category: string;
   user: { name: string; locationCoarse: string | null };
+  _count: { favourites: number };
 };
 
 export default function HomePage() {
@@ -180,6 +181,7 @@ export default function HomePage() {
                       <FavouriteButton
                         wishId={wish.id}
                         initialFavourited={favouriteIds.has(wish.id)}
+                        initialCount={wish._count.favourites}
                         size="sm"
                       />
                     </div>
