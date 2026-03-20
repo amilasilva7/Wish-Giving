@@ -66,7 +66,7 @@ export async function GET(request: Request) {
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
       user: {
-        select: { name: true, locationCoarse: true }
+        select: { name: true, locationCoarse: true, avatarUrl: true }
       },
       _count: { select: { favourites: true } }
     }

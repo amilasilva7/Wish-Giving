@@ -12,7 +12,7 @@ type Wish = {
   userId: string;
   title: string;
   category: string;
-  user: { name: string; locationCoarse: string | null };
+  user: { name: string; locationCoarse: string | null; avatarUrl: string | null };
   _count: { favourites: number };
 };
 
@@ -78,58 +78,112 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <div className="text-center py-12 mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">
-          Make a wish. Grant a wish.
-        </h1>
-        <p className="text-lg text-gray-500 mb-6">
-          Browse real wishes and find opportunities to make someone's day.
-        </p>
-        <Link href="/wishes/new" className="btn-primary text-base px-6 py-3 inline-block">
-          Create your own wish
-        </Link>
+      <div className="py-8 mb-4 flex flex-col md:flex-row items-center gap-10">
+
+        {/* Left — copy */}
+        <div className="flex-1 text-center md:text-left">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">
+            Make a wish. Grant a wish.
+          </h1>
+          <p className="text-lg text-gray-500 mb-6">
+            Browse real wishes and find opportunities to make someone's day.
+          </p>
+          <Link href="/wishes/new" className="btn-primary text-base px-6 py-3 inline-block">
+            Create your own wish
+          </Link>
+        </div>
+
+        {/* Right — illustration */}
+        <div className="flex-shrink-0 w-full md:w-80">
+          <svg viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-full">
+            {/* Background glow */}
+            <circle cx="150" cy="120" r="112" fill="#fff7ed"/>
+            <circle cx="150" cy="120" r="82" fill="#ffedd5" opacity="0.4"/>
+
+            {/* LEFT FIGURE (giver) */}
+            <ellipse cx="75" cy="158" rx="30" ry="48" fill="#f97316"/>
+            <circle cx="75" cy="82" r="26" fill="#f97316"/>
+            {/* Eyes */}
+            <circle cx="67" cy="78" r="3.5" fill="white"/>
+            <circle cx="83" cy="78" r="3.5" fill="white"/>
+            <circle cx="68" cy="79" r="2" fill="#431407"/>
+            <circle cx="84" cy="79" r="2" fill="#431407"/>
+            {/* Smile */}
+            <path d="M 68,90 Q 75,97 82,90" stroke="#431407" strokeWidth="2" strokeLinecap="round" fill="none"/>
+            {/* Arm reaching toward heart */}
+            <path d="M 103,144 Q 122,128 138,118" stroke="#f97316" strokeWidth="14" strokeLinecap="round" fill="none"/>
+
+            {/* RIGHT FIGURE (receiver) */}
+            <ellipse cx="225" cy="158" rx="30" ry="48" fill="#fb923c"/>
+            <circle cx="225" cy="82" r="26" fill="#fb923c"/>
+            {/* Eyes */}
+            <circle cx="217" cy="78" r="3.5" fill="white"/>
+            <circle cx="233" cy="78" r="3.5" fill="white"/>
+            <circle cx="218" cy="79" r="2" fill="#431407"/>
+            <circle cx="234" cy="79" r="2" fill="#431407"/>
+            {/* Smile */}
+            <path d="M 218,90 Q 225,97 232,90" stroke="#431407" strokeWidth="2" strokeLinecap="round" fill="none"/>
+            {/* Arm reaching toward heart */}
+            <path d="M 197,144 Q 178,128 162,118" stroke="#fb923c" strokeWidth="14" strokeLinecap="round" fill="none"/>
+
+            {/* HEART — center */}
+            {/* Soft glow */}
+            <circle cx="150" cy="126" r="32" fill="#fde68a" opacity="0.45"/>
+            {/* Heart shape */}
+            <path d="M 150,112 C 150,112 136,99 121,104 C 106,109 106,128 150,152 C 194,128 194,109 179,104 C 164,99 150,112 150,112 Z" fill="#dc2626"/>
+            {/* Highlight */}
+            <path d="M 128,109 Q 122,118 124,129" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.4"/>
+
+            {/* Sparkles between the heads */}
+            <circle cx="150" cy="66" r="4.5" fill="#fbbf24"/>
+            <path d="M 150,60 L 150,53" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M 139,64 L 134,58" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M 161,63 L 166,57" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="133" cy="74" r="2" fill="#fb923c" opacity="0.7"/>
+            <circle cx="167" cy="73" r="2" fill="#fb923c" opacity="0.7"/>
+          </svg>
+        </div>
+
       </div>
 
       {/* Filters */}
-      <div className="card mb-8">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Search & filter</h2>
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="form-field flex-1 min-w-48 relative">
-            <label className="label">Search</label>
+      <div className="mb-6">
+        <div className="flex gap-2 items-center">
+          <div className="relative flex-1">
             <input
               type="text"
               value={q}
               onChange={e => setQ(e.target.value)}
               placeholder="Search wishes…"
-              className="input pr-10"
+              className="input pr-10 w-full"
             />
-            {searching && (
-              <div className="absolute right-3 top-9 text-orange-400">
-                <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            {searching ? (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+              </div>
+            ) : (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
                 </svg>
               </div>
             )}
           </div>
-          <div className="form-field flex-1 min-w-36">
-            <label className="label">Category</label>
-            <select value={category} onChange={e => setCategory(e.target.value)} className="input">
-              <option value="">All categories</option>
-              {WISH_CATEGORIES.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-field flex-1 min-w-36">
-            <label className="label">Occasion</label>
-            <select value={occasionType} onChange={e => setOccasionType(e.target.value)} className="input">
-              <option value="">All occasions</option>
-              {OCCASION_TYPES.map(o => (
-                <option key={o.id} value={o.id}>{o.label}</option>
-              ))}
-            </select>
-          </div>
+          <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto">
+            <option value="">All categories</option>
+            {WISH_CATEGORIES.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.label}</option>
+            ))}
+          </select>
+          <select value={occasionType} onChange={e => setOccasionType(e.target.value)} className="input w-auto">
+            <option value="">All occasions</option>
+            {OCCASION_TYPES.map(o => (
+              <option key={o.id} value={o.id}>{o.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* Filter pills */}
@@ -208,12 +262,25 @@ export default function HomePage() {
                       <Link href={`/wish/${wish.id}`} className="text-lg font-semibold text-gray-900 hover:text-orange-500 transition-colors">
                         {wish.title}
                       </Link>
-                      <p className="text-sm text-gray-500 mt-1">
-                        by <Link href={`/user/${wish.userId}`} className="font-medium text-gray-700 hover:text-orange-500">{wish.user.name}</Link>
-                        {wish.user.locationCoarse && (
-                          <span className="ml-1 text-gray-400">· {wish.user.locationCoarse}</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        {wish.user.avatarUrl ? (
+                          <img
+                            src={wish.user.avatarUrl}
+                            alt={wish.user.name}
+                            className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-xs font-bold text-orange-500 flex-shrink-0">
+                            {wish.user.name.charAt(0).toUpperCase()}
+                          </div>
                         )}
-                      </p>
+                        <p className="text-sm text-gray-500">
+                          by <Link href={`/user/${wish.userId}`} className="font-medium text-gray-700 hover:text-orange-500">{wish.user.name}</Link>
+                          {wish.user.locationCoarse && (
+                            <span className="ml-1 text-gray-400">· {wish.user.locationCoarse}</span>
+                          )}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <span className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full whitespace-nowrap font-medium">
