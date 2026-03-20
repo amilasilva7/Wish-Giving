@@ -21,14 +21,15 @@ services:
       - db
     environment:
       DATABASE_URL: postgresql://wish:wish_password@db:5432/wish_app
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3002
       NEXTAUTH_SECRET: dev-secret-change-me
+      PORT: 3002
     volumes:
       - ./apps/web:/app/apps/web
       - ./package.json:/app/package.json
       - ./prisma:/app/prisma
     ports:
-      - "3000:3000"
+      - "3002:3002"
     command: ["sh", "-c", "npx prisma db push --accept-data-loss && npm run dev --workspace apps/web"]
 
 volumes:
