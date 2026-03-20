@@ -3,11 +3,12 @@
 import { FormEvent, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import SparkLoader from "@/app/components/SparkLoader";
-import PageLoader from "@/app/components/PageLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 export default function PledgePage() {
   const params = useParams<{ wishId: string }>();
   const router = useRouter();
+  const { showLoading, hideLoading } = useLoading();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -16,23 +17,29 @@ export default function PledgePage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = await fetch("/api/pledges", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wishId: params.wishId, message })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Failed to create pledge");
+    showLoading("Sending pledge…");
+    try {
+      const res = await fetch("/api/pledges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wishId: params.wishId, message })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to create pledge");
+        setLoading(false);
+        hideLoading();
+        return;
+      }
+      router.push("/pledges?flash=pledged");
+    } catch {
       setLoading(false);
-      return;
+      hideLoading();
     }
-    router.push("/pledges?flash=pledged");
   }
 
   return (
     <>
-    {loading && <PageLoader label="Sending pledge…" />}
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Pledge to fulfill this wish</h1>
       <div className="card">

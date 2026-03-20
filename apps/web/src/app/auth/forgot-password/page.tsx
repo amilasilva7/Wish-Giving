@@ -2,31 +2,37 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import SparkLoader from "@/app/components/SparkLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showLoading, hideLoading } = useLoading();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    const res = await fetch("/api/auth/forgot-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
-    });
-
-    setLoading(false);
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Something went wrong");
-      return;
+    showLoading("Sending reset link…");
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Something went wrong");
+        return;
+      }
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
+      hideLoading();
     }
-    setSubmitted(true);
   }
 
   if (submitted) {
@@ -62,7 +68,7 @@ export default function ForgotPasswordPage() {
           </div>
           {error && <p className="error-msg">{error}</p>}
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? "Sending…" : "Send reset link"}
+            {loading ? <SparkLoader label="Sending…" size="sm" /> : "Send reset link"}
           </button>
         </form>
         <p className="text-sm text-gray-500 mt-4 text-center">

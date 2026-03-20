@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 import SparkLoader from "@/app/components/SparkLoader";
-import PageLoader from "@/app/components/PageLoader";
 import { useToast } from "@/app/components/Toast";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 type Wish = {
   id: string;
@@ -23,6 +23,7 @@ export default function EditWishPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { showToast } = useToast();
+  const { showLoading, hideLoading } = useLoading();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [wish, setWish] = useState<Wish | null>(null);
@@ -51,33 +52,47 @@ export default function EditWishPage() {
     if (!wish) return;
     setError(null);
     setSaving(true);
-    const res = await fetch(`/api/wishes/${wish.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(wish)
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Failed to update wish");
+    showLoading("Saving wish…");
+    try {
+      const res = await fetch(`/api/wishes/${wish.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(wish)
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to update wish");
+        setSaving(false);
+        hideLoading();
+        return;
+      }
+      showToast("Your wish has been updated.", "success");
+      router.push("/wishes");
+    } catch {
       setSaving(false);
-      return;
+      hideLoading();
     }
-    showToast("Your wish has been updated.", "success");
-    router.push("/wishes");
   }
 
   async function handleDelete() {
     if (!wish) return;
     setDeleting(true);
-    const res = await fetch(`/api/wishes/${wish.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      setError("Failed to delete wish");
+    showLoading("Deleting wish…");
+    try {
+      const res = await fetch(`/api/wishes/${wish.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setError("Failed to delete wish");
+        setDeleting(false);
+        setConfirmDelete(false);
+        hideLoading();
+        return;
+      }
+      showToast("Your wish has been deleted.", "success");
+      router.push("/wishes");
+    } catch {
       setDeleting(false);
-      setConfirmDelete(false);
-      return;
+      hideLoading();
     }
-    showToast("Your wish has been deleted.", "success");
-    router.push("/wishes");
   }
 
   if (loading) {
@@ -90,7 +105,6 @@ export default function EditWishPage() {
 
   return (
     <>
-    {(saving || deleting) && <PageLoader label={deleting ? "Deleting wish…" : "Saving wish…"} />}
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit wish</h1>
       <div className="card">

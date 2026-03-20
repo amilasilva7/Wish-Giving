@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import SparkLoader from "@/app/components/SparkLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 type Report = {
   id: string;
@@ -14,8 +15,10 @@ type Report = {
 };
 
 export default function AdminReportsPage() {
+  const { showLoading, hideLoading } = useLoading();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -34,45 +37,66 @@ export default function AdminReportsPage() {
   useEffect(() => { load(); }, []);
 
   async function setReportStatus(reportId: string, status: "open" | "closed") {
-    const res = await fetch("/api/admin/reports", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reportId, status })
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Failed to update report");
-      return;
+    setActionLoading(true);
+    showLoading("Updating report…");
+    try {
+      const res = await fetch("/api/admin/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId, status })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to update report");
+        return;
+      }
+      await load();
+    } finally {
+      setActionLoading(false);
+      hideLoading();
     }
-    await load();
   }
 
   async function disableUser(userId: string) {
-    const res = await fetch(`/api/admin/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "disabled" })
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Failed to disable user");
-      return;
+    setActionLoading(true);
+    showLoading("Disabling user…");
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "disabled" })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to disable user");
+        return;
+      }
+      await load();
+    } finally {
+      setActionLoading(false);
+      hideLoading();
     }
-    await load();
   }
 
   async function disableWish(wishId: string) {
-    const res = await fetch(`/api/admin/wishes/${wishId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "disabled" })
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Failed to disable wish");
-      return;
+    setActionLoading(true);
+    showLoading("Disabling wish…");
+    try {
+      const res = await fetch(`/api/admin/wishes/${wishId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "disabled" })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to disable wish");
+        return;
+      }
+      await load();
+    } finally {
+      setActionLoading(false);
+      hideLoading();
     }
-    await load();
   }
 
   return (
@@ -108,19 +132,19 @@ export default function AdminReportsPage() {
               <p className="text-sm text-gray-700 mb-1"><span className="font-medium">Reason:</span> {r.reason}</p>
               <p className="text-sm text-gray-500 mb-4">Reporter: {r.reporter.name} ({r.reporter.email})</p>
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => setReportStatus(r.id, "closed")} className="btn-secondary text-sm px-3 py-1.5">
+                <button onClick={() => setReportStatus(r.id, "closed")} disabled={actionLoading} className="btn-secondary text-sm px-3 py-1.5">
                   Close report
                 </button>
-                <button onClick={() => setReportStatus(r.id, "open")} className="btn-secondary text-sm px-3 py-1.5">
+                <button onClick={() => setReportStatus(r.id, "open")} disabled={actionLoading} className="btn-secondary text-sm px-3 py-1.5">
                   Re-open
                 </button>
                 {r.targetType === "user" && (
-                  <button onClick={() => disableUser(r.targetId)} className="btn-danger text-sm px-3 py-1.5">
+                  <button onClick={() => disableUser(r.targetId)} disabled={actionLoading} className="btn-danger text-sm px-3 py-1.5">
                     Disable user
                   </button>
                 )}
                 {r.targetType === "wish" && (
-                  <button onClick={() => disableWish(r.targetId)} className="btn-danger text-sm px-3 py-1.5">
+                  <button onClick={() => disableWish(r.targetId)} disabled={actionLoading} className="btn-danger text-sm px-3 py-1.5">
                     Disable wish
                   </button>
                 )}

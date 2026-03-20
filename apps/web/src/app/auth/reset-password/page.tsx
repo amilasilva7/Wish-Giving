@@ -3,6 +3,8 @@
 import { FormEvent, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import SparkLoader from "@/app/components/SparkLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 function ResetPasswordPageInner() {
   const searchParams = useSearchParams();
@@ -12,6 +14,7 @@ function ResetPasswordPageInner() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showLoading, hideLoading } = useLoading();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -21,20 +24,23 @@ function ResetPasswordPageInner() {
     }
     setLoading(true);
     setError(null);
-
-    const res = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password })
-    });
-
-    setLoading(false);
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Failed to reset password");
-      return;
+    showLoading("Updating password…");
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to reset password");
+        return;
+      }
+      setDone(true);
+    } finally {
+      setLoading(false);
+      hideLoading();
     }
-    setDone(true);
   }
 
   if (!token) {
@@ -90,7 +96,7 @@ function ResetPasswordPageInner() {
           </div>
           {error && <p className="error-msg">{error}</p>}
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? "Updating…" : "Reset password"}
+            {loading ? <SparkLoader label="Updating…" size="sm" /> : "Reset password"}
           </button>
         </form>
       </div>

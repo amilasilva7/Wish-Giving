@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import SparkLoader from "@/app/components/SparkLoader";
-import PageLoader from "@/app/components/PageLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 import FavouriteButton from "@/app/components/FavouriteButton";
 
 type User = {
@@ -33,6 +33,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const { showLoading, hideLoading } = useLoading();
   const [favourites, setFavourites] = useState<FavWish[]>([]);
   const [loadingFavs, setLoadingFavs] = useState(true);
 
@@ -59,22 +60,27 @@ export default function ProfilePage() {
     setSaving(true);
     setError(null);
     setSuccess(false);
-    const res = await fetch("/api/users/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    });
-    setSaving(false);
-    if (!res.ok) {
+    showLoading("Saving profile…");
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to save");
+        return;
+      }
       const data = await res.json();
-      setError(data.error ?? "Failed to save");
-      return;
+      setUser(data.user);
+      setEditing(false);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 4000);
+    } finally {
+      setSaving(false);
+      hideLoading();
     }
-    const data = await res.json();
-    setUser(data.user);
-    setEditing(false);
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 4000);
   }
 
   function handleEditClick() {
@@ -95,7 +101,6 @@ export default function ProfilePage() {
 
   return (
     <>
-    {saving && <PageLoader label="Saving profile…" />}
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Your profile</h1>
       {success && <p className="success-msg mb-4">Profile updated successfully.</p>}

@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import SparkLoader from "./SparkLoader";
+import { useLoading } from "./LoadingProvider";
 
 export default function NavAuth() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -14,16 +18,23 @@ export default function NavAuth() {
   }, []);
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
+    setLogoutLoading(true);
+    showLoading("Signing out…");
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/";
+    } catch {
+      setLogoutLoading(false);
+      hideLoading();
+    }
   }
 
   if (loggedIn === null) return null; // loading — render nothing to avoid flash
 
   if (loggedIn) {
     return (
-      <button onClick={handleLogout} className="btn-primary text-sm px-3 py-1.5">
-        Log out
+      <button onClick={handleLogout} disabled={logoutLoading} className="btn-primary text-sm px-3 py-1.5">
+        {logoutLoading ? <SparkLoader label="Signing out…" size="sm" /> : "Log out"}
       </button>
     );
   }

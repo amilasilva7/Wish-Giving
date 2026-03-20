@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import SparkLoader from "@/app/components/SparkLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 type User = {
   id: string;
@@ -15,10 +16,12 @@ type User = {
 };
 
 export default function AdminUsersPage() {
+  const { showLoading, hideLoading } = useLoading();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [search, setSearch] = useState("");
 
   async function load() {
@@ -37,17 +40,24 @@ export default function AdminUsersPage() {
 
   async function toggleStatus(userId: string, currentStatus: string) {
     setActionError(null);
+    setActionLoading(true);
+    showLoading("Updating user status…");
     const newStatus = currentStatus === "active" ? "disabled" : "active";
-    const res = await fetch(`/api/admin/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus })
-    });
-    if (!res.ok) {
-      setActionError("Failed to update user status.");
-      return;
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!res.ok) {
+        setActionError("Failed to update user status.");
+        return;
+      }
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+    } finally {
+      setActionLoading(false);
+      hideLoading();
     }
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
   }
 
   const filtered = users.filter(u =>
@@ -117,6 +127,7 @@ export default function AdminUsersPage() {
                 <td className="px-4 py-3 text-center">
                   <button
                     onClick={() => toggleStatus(user.id, user.status)}
+                    disabled={actionLoading}
                     className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
                       user.status === "active"
                         ? "bg-red-50 text-red-600 hover:bg-red-100"

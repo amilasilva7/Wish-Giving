@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import SparkLoader from "@/app/components/SparkLoader";
-import PageLoader from "@/app/components/PageLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 type Wish = { id: string; title: string; category: string; status: string; createdAt: string };
 type User = {
@@ -18,6 +18,7 @@ type User = {
 
 export default function PublicProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const { showLoading, hideLoading } = useLoading();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,31 +41,41 @@ export default function PublicProfilePage() {
   async function submitReport() {
     if (!reportReason.trim()) return;
     setReportLoading(true);
-    await fetch("/api/reports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targetType: "user", targetId: id, reason: reportReason })
-    });
-    setReportLoading(false);
-    setReporting(false);
-    setReportDone(true);
+    showLoading("Submitting report…");
+    try {
+      await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetType: "user", targetId: id, reason: reportReason })
+      });
+      setReporting(false);
+      setReportDone(true);
+    } finally {
+      setReportLoading(false);
+      hideLoading();
+    }
   }
 
   async function handleBlock() {
     setBlockLoading(true);
-    await fetch("/api/block", {
-      method: blocked ? "DELETE" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blockedUserId: id })
-    });
-    setBlockLoading(false);
-    setConfirmBlock(false);
-    if (!blocked) {
-      setBlocked(true);
-      setBlockSuccess(true);
-    } else {
-      setBlocked(false);
-      setBlockSuccess(false);
+    showLoading("Blocking user…");
+    try {
+      await fetch("/api/block", {
+        method: blocked ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blockedUserId: id })
+      });
+      setConfirmBlock(false);
+      if (!blocked) {
+        setBlocked(true);
+        setBlockSuccess(true);
+      } else {
+        setBlocked(false);
+        setBlockSuccess(false);
+      }
+    } finally {
+      setBlockLoading(false);
+      hideLoading();
     }
   }
 
@@ -73,7 +84,6 @@ export default function PublicProfilePage() {
 
   return (
     <>
-    {(blockLoading || reportLoading) && <PageLoader label={blockLoading ? "Updating block…" : "Submitting report…"} />}
     <div className="max-w-2xl mx-auto">
       <div className="card mb-6">
         <div className="flex items-center gap-4 mb-4">

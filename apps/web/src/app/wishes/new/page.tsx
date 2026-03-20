@@ -4,12 +4,13 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 import SparkLoader from "@/app/components/SparkLoader";
-import PageLoader from "@/app/components/PageLoader";
 import { useToast } from "@/app/components/Toast";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 export default function NewWishPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { showLoading, hideLoading } = useLoading();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>(WISH_CATEGORIES[0]?.id ?? "");
@@ -47,33 +48,39 @@ export default function NewWishPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = await fetch("/api/wishes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, category, occasionType, visibility, locationCoarse })
-    });
-    if (res.status === 401) {
-      localStorage.setItem("wish_draft", JSON.stringify({
-        savedAt: Date.now(),
-        title, description, category, occasionType, visibility, locationCoarse
-      }));
-      window.location.href = "/auth/login?redirect=/wishes/new";
-      return;
-    }
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Failed to create wish");
+    showLoading("Saving wish…");
+    try {
+      const res = await fetch("/api/wishes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, category, occasionType, visibility, locationCoarse })
+      });
+      if (res.status === 401) {
+        localStorage.setItem("wish_draft", JSON.stringify({
+          savedAt: Date.now(),
+          title, description, category, occasionType, visibility, locationCoarse
+        }));
+        window.location.href = "/auth/login?redirect=/wishes/new";
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to create wish");
+        setLoading(false);
+        hideLoading();
+        return;
+      }
+      localStorage.removeItem("wish_draft");
+      showToast("Your wish is live!", "success");
+      router.push("/wishes");
+    } catch {
       setLoading(false);
-      return;
+      hideLoading();
     }
-    localStorage.removeItem("wish_draft");
-    showToast("Your wish is live!", "success");
-    router.push("/wishes");
   }
 
   return (
     <>
-    {loading && <PageLoader label="Saving wish…" />}
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Create a wish</h1>
       {draftRestored && (

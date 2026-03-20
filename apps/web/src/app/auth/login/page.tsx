@@ -4,13 +4,14 @@ import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import SparkLoader from "@/app/components/SparkLoader";
-import PageLoader from "@/app/components/PageLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 function LoginPageInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { showLoading, hideLoading } = useLoading();
 
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
@@ -20,25 +21,31 @@ function LoginPageInner() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Login failed");
+    showLoading("Signing in…");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Login failed");
+        setLoading(false);
+        hideLoading();
+        return;
+      }
+      // M3: prevent open redirect — only allow same-origin paths
+      const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+      window.location.href = safeRedirect;
+    } catch {
       setLoading(false);
-      return;
+      hideLoading();
     }
-    // M3: prevent open redirect — only allow same-origin paths
-    const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
-    window.location.href = safeRedirect;
   }
 
   return (
     <>
-    {loading && <PageLoader label="Signing in…" />}
     <div className="max-w-md mx-auto mt-8">
       <div className="card">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Sign in</h1>

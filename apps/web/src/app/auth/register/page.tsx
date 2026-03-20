@@ -4,7 +4,7 @@ import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import SparkLoader from "@/app/components/SparkLoader";
-import PageLoader from "@/app/components/PageLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
 
 function RegisterPageInner() {
   const [name, setName] = useState("");
@@ -12,6 +12,7 @@ function RegisterPageInner() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { showLoading, hideLoading } = useLoading();
 
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
@@ -20,28 +21,34 @@ function RegisterPageInner() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Registration failed");
+    showLoading("Creating account…");
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Registration failed");
+        setLoading(false);
+        hideLoading();
+        return;
+      }
+      // M3: prevent open redirect — only allow same-origin paths
+      const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+      const loginUrl = safeRedirect !== "/"
+        ? `/auth/login?redirect=${encodeURIComponent(safeRedirect)}`
+        : "/auth/login";
+      window.location.href = loginUrl;
+    } catch {
       setLoading(false);
-      return;
+      hideLoading();
     }
-    // M3: prevent open redirect — only allow same-origin paths
-    const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
-    const loginUrl = safeRedirect !== "/"
-      ? `/auth/login?redirect=${encodeURIComponent(safeRedirect)}`
-      : "/auth/login";
-    window.location.href = loginUrl;
   }
 
   return (
     <>
-    {loading && <PageLoader label="Creating account…" />}
     <div className="max-w-md mx-auto mt-8">
       <div className="card">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Create account</h1>
