@@ -7,6 +7,18 @@
   to { transform: rotate(360deg); }
 }
 
+/* Toast slide-in animation */
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .loader-ring {
   display: inline-block;
   border-radius: 50%;
@@ -47,5 +59,11 @@
   }
   .info-msg {
     @apply text-blue-700 bg-blue-50 border border-blue-200 text-sm rounded-lg px-4 py-2;
+  }
+}
+
+@layer utilities {
+  .animate-toast-slide-in {
+    animation: toast-slide-in 0.3s ease-out;
   }
 }

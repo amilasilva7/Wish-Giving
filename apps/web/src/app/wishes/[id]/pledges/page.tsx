@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import SparkLoader from "@/app/components/SparkLoader";
 import PageLoader from "@/app/components/PageLoader";
+import { useToast } from "@/app/components/Toast";
 
 type Giver = { id: string; name: string; avatarUrl: string | null; locationCoarse: string | null };
 type Pledge = {
@@ -28,13 +29,13 @@ const STATUS_COLORS: Record<string, string> = {
 export default function WishPledgesPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { showToast } = useToast();
   const [pledges, setPledges] = useState<Pledge[]>([]);
   const [wish, setWish] = useState<Wish | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
-  const [inlineSuccess, setInlineSuccess] = useState<Record<string, string>>({});
   const [confirmDecline, setConfirmDecline] = useState<string | null>(null);
 
   async function load() {
@@ -66,9 +67,8 @@ export default function WishPledgesPage() {
       setActionError(data.error ?? "Action failed");
       return;
     }
-    const successMsg = action === "accept" ? "Accepted." : action === "decline" ? "Declined." : "Marked as fulfilled.";
-    setInlineSuccess(prev => ({ ...prev, [pledgeId]: successMsg }));
-    setTimeout(() => setInlineSuccess(prev => { const next = { ...prev }; delete next[pledgeId]; return next; }), 3000);
+    const successMsg = action === "accept" ? "Pledge accepted." : action === "decline" ? "Pledge declined." : "Marked as fulfilled.";
+    showToast(successMsg, "success");
     await load();
   }
 
@@ -91,7 +91,16 @@ export default function WishPledgesPage() {
       {actionError && <p className="error-msg mb-4">{actionError}</p>}
 
       {pledges.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400">No pledges yet.</div>
+        <div className="card text-center py-16">
+          <div className="text-5xl mb-4">🤲</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No pledges yet</h3>
+          <p className="text-gray-500 mb-6">Share your wish to attract givers who want to help make it happen.</p>
+          <div className="text-sm text-gray-500">
+            Share this wish link: <span className="font-mono bg-gray-100 px-2 py-1 rounded inline-block mt-2 text-xs break-all">
+              {typeof window !== "undefined" ? `${window.location.origin}/wish/${id}` : `/wish/${id}`}
+            </span>
+          </div>
+        </div>
       ) : (
         <ul className="flex flex-col gap-4">
           {pledges.map(pledge => (
@@ -125,10 +134,6 @@ export default function WishPledgesPage() {
                 <p className="text-xs text-gray-400 mb-3">
                   Expires: {new Date(pledge.expiresAt).toLocaleString()}
                 </p>
-              )}
-
-              {inlineSuccess[pledge.id] && (
-                <p className="success-msg mb-2">{inlineSuccess[pledge.id]}</p>
               )}
 
               {pledge.status === "pending" && (

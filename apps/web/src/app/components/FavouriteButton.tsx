@@ -48,8 +48,8 @@ export default function FavouriteButton({ wishId, initialFavourited, initialCoun
     <button
       onClick={toggle}
       disabled={loading}
-      title={favourited ? "Remove from favourites" : "Save to favourites"}
-      aria-label={favourited ? "Remove from favourites" : "Save to favourites"}
+      title={favourited ? "Remove from favourites" : "Add to favourites"}
+      aria-label={favourited ? "Remove from favourites" : "Add to favourites"}
       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition-all
         ${favourited
           ? "border-red-300 text-red-500 bg-red-50 hover:bg-red-100"
@@ -60,7 +60,6 @@ export default function FavouriteButton({ wishId, initialFavourited, initialCoun
         ? <SparkLoader size="sm" />
         : <>
             <span>{favourited ? "❤" : "♡"}</span>
-            <span>{favourited ? "Saved" : "Save"}</span>
             {count > 0 && <span className="opacity-60">· {count}</span>}
           </>
       }

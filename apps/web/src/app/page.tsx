@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 import SparkLoader from "@/app/components/SparkLoader";
 import FavouriteButton from "@/app/components/FavouriteButton";
+import { WishCardSkeletonList } from "@/app/components/WishCardSkeleton";
 
 type Wish = {
   id: string;
@@ -18,14 +19,13 @@ type Wish = {
 export default function HomePage() {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [occasionType, setOccasionType] = useState("");
   const [q, setQ] = useState("");
   const [fetchError, setFetchError] = useState(false);
-  const [hasFiltered, setHasFiltered] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
 
   async function fetchWishes(params: { category?: string; occasionType?: string; q?: string; cursor?: string }, append = false) {
@@ -59,13 +59,14 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  async function handleFilter(e: FormEvent) {
-    e.preventDefault();
-    setSearching(true);
-    setHasFiltered(true);
-    await fetchWishes({ category, occasionType, q });
-    setSearching(false);
-  }
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearching(true);
+      fetchWishes({ category, occasionType, q }).finally(() => setSearching(false));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [q, category, occasionType]);
 
   async function handleLoadMore() {
     if (!nextCursor) return;
@@ -92,20 +93,28 @@ export default function HomePage() {
       {/* Filters */}
       <div className="card mb-8">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Search & filter</h2>
-        <form onSubmit={handleFilter} className="flex flex-wrap gap-4 items-end">
-          <div className="form-field flex-1 min-w-48">
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="form-field flex-1 min-w-48 relative">
             <label className="label">Search</label>
             <input
               type="text"
               value={q}
               onChange={e => setQ(e.target.value)}
               placeholder="Search wishes…"
-              className="input"
+              className="input pr-10"
             />
+            {searching && (
+              <div className="absolute right-3 top-9 text-orange-400">
+                <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            )}
           </div>
           <div className="form-field flex-1 min-w-36">
             <label className="label">Category</label>
-            <select name="category" value={category} onChange={e => setCategory(e.target.value)} className="input">
+            <select value={category} onChange={e => setCategory(e.target.value)} className="input">
               <option value="">All categories</option>
               {WISH_CATEGORIES.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -114,17 +123,44 @@ export default function HomePage() {
           </div>
           <div className="form-field flex-1 min-w-36">
             <label className="label">Occasion</label>
-            <select name="occasionType" value={occasionType} onChange={e => setOccasionType(e.target.value)} className="input">
+            <select value={occasionType} onChange={e => setOccasionType(e.target.value)} className="input">
               <option value="">All occasions</option>
               {OCCASION_TYPES.map(o => (
                 <option key={o.id} value={o.id}>{o.label}</option>
               ))}
             </select>
           </div>
-          <button type="submit" className="btn-primary" disabled={searching}>
-            {searching ? <SparkLoader label="Searching…" size="sm" /> : "Search"}
-          </button>
-        </form>
+        </div>
+
+        {/* Filter pills */}
+        {(q || category || occasionType) && (
+          <div className="mt-4 flex flex-wrap gap-2 items-center">
+            {q && (
+              <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                <span>🔍 {q}</span>
+                <button onClick={() => setQ("")} className="hover:opacity-70">✕</button>
+              </div>
+            )}
+            {category && (
+              <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                <span>🏷 {WISH_CATEGORIES.find(c => c.id === category)?.label}</span>
+                <button onClick={() => setCategory("")} className="hover:opacity-70">✕</button>
+              </div>
+            )}
+            {occasionType && (
+              <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                <span>🎂 {OCCASION_TYPES.find(o => o.id === occasionType)?.label}</span>
+                <button onClick={() => setOccasionType("")} className="hover:opacity-70">✕</button>
+              </div>
+            )}
+            <button
+              onClick={() => { setQ(""); setCategory(""); setOccasionType(""); }}
+              className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Wish list */}
@@ -134,27 +170,32 @@ export default function HomePage() {
           <span className="ml-2 text-sm font-normal text-gray-400">({wishes.length}{nextCursor ? "+" : ""})</span>
         </h2>
         {loading ? (
-          <div className="card text-center py-12 text-orange-400">
-            <SparkLoader label="Loading wishes…" />
-          </div>
+          <WishCardSkeletonList count={6} />
         ) : fetchError ? (
           <div className="error-msg text-center py-12">
             Failed to load wishes. Please try refreshing the page.
           </div>
         ) : wishes.length === 0 ? (
-          <div className="card text-center py-12 text-gray-400">
-            {hasFiltered ? (
+          <div className="card text-center py-16">
+            {q || category || occasionType ? (
               <>
-                No wishes match your search. Try different filters or{" "}
+                <div className="text-5xl mb-4">🔍</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No wishes match your filters</h3>
+                <p className="text-gray-500 mb-6">Try adjusting your search or filters to find what you're looking for.</p>
                 <button
-                  className="text-orange-500 hover:underline"
-                  onClick={() => { setCategory(""); setOccasionType(""); setQ(""); setHasFiltered(false); setLoading(true); fetchWishes({}).finally(() => setLoading(false)); }}
+                  className="btn-primary inline-block"
+                  onClick={() => { setCategory(""); setOccasionType(""); setQ(""); }}
                 >
-                  browse all wishes
-                </button>.
+                  Clear all filters
+                </button>
               </>
             ) : (
-              <>No wishes found. <Link href="/wishes/new" className="text-orange-500 hover:underline">Be the first!</Link></>
+              <>
+                <div className="text-5xl mb-4">✨</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No wishes yet</h3>
+                <p className="text-gray-500 mb-6">Be the first to make a wish and inspire others to help!</p>
+                <Link href="/wishes/new" className="btn-primary inline-block">Create your wish</Link>
+              </>
             )}
           </div>
         ) : (

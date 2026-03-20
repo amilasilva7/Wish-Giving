@@ -1,11 +1,15 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 import SparkLoader from "@/app/components/SparkLoader";
 import PageLoader from "@/app/components/PageLoader";
+import { useToast } from "@/app/components/Toast";
 
 export default function NewWishPage() {
+  const router = useRouter();
+  const { showToast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>(WISH_CATEGORIES[0]?.id ?? "");
@@ -63,7 +67,8 @@ export default function NewWishPage() {
       return;
     }
     localStorage.removeItem("wish_draft");
-    window.location.href = "/wishes?flash=wish_created";
+    showToast("Your wish is live!", "success");
+    router.push("/wishes");
   }
 
   return (

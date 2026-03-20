@@ -6,6 +6,7 @@ import Link from "next/link";
 import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
 import SparkLoader from "@/app/components/SparkLoader";
 import PageLoader from "@/app/components/PageLoader";
+import { useToast } from "@/app/components/Toast";
 
 type Wish = {
   id: string;
@@ -21,6 +22,7 @@ type Wish = {
 export default function EditWishPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [wish, setWish] = useState<Wish | null>(null);
@@ -60,7 +62,8 @@ export default function EditWishPage() {
       setSaving(false);
       return;
     }
-    router.push("/wishes?flash=wish_updated");
+    showToast("Your wish has been updated.", "success");
+    router.push("/wishes");
   }
 
   async function handleDelete() {
@@ -73,7 +76,8 @@ export default function EditWishPage() {
       setConfirmDelete(false);
       return;
     }
-    router.push("/wishes?flash=wish_deleted");
+    showToast("Your wish has been deleted.", "success");
+    router.push("/wishes");
   }
 
   if (loading) {

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 import FavouriteButton from "@/app/components/FavouriteButton";
+import ShareButton from "@/app/components/ShareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,10 @@ export default async function WishDetailPage({ params }: Params) {
 
   const isExpired = wish.expiresAt && wish.expiresAt < new Date();
 
+  // Determine the current status step
+  const statusSteps = ["open", "pledged", "in_coordination", "fulfilled"];
+  const currentStepIndex = statusSteps.indexOf(wish.status);
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="card">
@@ -59,7 +64,43 @@ export default async function WishDetailPage({ params }: Params) {
           </div>
         </div>
         <p className="text-gray-600 leading-relaxed mb-6">{wish.description}</p>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-500 border-t border-gray-100 pt-4 mb-6">
+
+        {/* Status Timeline */}
+        <div className="mb-6 pb-6 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            {statusSteps.map((step, idx) => (
+              <div key={step} className="flex items-center flex-1">
+                {/* Dot */}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white ${
+                  idx === currentStepIndex ? "bg-orange-500" :
+                  idx < currentStepIndex ? "bg-gray-400" :
+                  "bg-gray-200"
+                }`}>
+                  {idx < currentStepIndex ? "✓" : (idx + 1)}
+                </div>
+                {/* Line */}
+                {idx < statusSteps.length - 1 && (
+                  <div className={`h-1 flex-1 mx-1 ${
+                    idx < currentStepIndex ? "bg-gray-400" : "bg-gray-200"
+                  }`}></div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex text-xs text-gray-500">
+            {statusSteps.map((step, idx) => (
+              <div key={step} className={`flex-1 text-center ${
+                idx === currentStepIndex ? "font-bold text-orange-600" :
+                idx < currentStepIndex ? "text-gray-600" :
+                "text-gray-400"
+              }`}>
+                {step.replace("_", " ")}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6">
           <span>By <Link href={`/user/${wish.userId}`} className="font-medium text-gray-700 hover:text-orange-500">{wish.user.name}</Link></span>
           {wish.user.locationCoarse && <span>· {wish.user.locationCoarse}</span>}
           {wish.expiresAt && (
@@ -73,11 +114,18 @@ export default async function WishDetailPage({ params }: Params) {
             {wish.status.replace("_", " ")}
           </span>
         </div>
-        {wish.status === "open" && !isExpired && (
-          <Link href={`/pledge/${wish.id}`} className="btn-primary inline-block">
-            Pledge to fulfill this wish
-          </Link>
-        )}
+
+        <div className="flex gap-3">
+          {wish.status === "open" && !isExpired && (
+            <Link href={`/pledge/${wish.id}`} className="btn-primary inline-block">
+              Pledge to fulfill this wish
+            </Link>
+          )}
+          <ShareButton
+            url={typeof window !== "undefined" ? window.location.href : `${process.env.NEXT_PUBLIC_BASE_URL || ""}/wish/${wish.id}`}
+            title={wish.title}
+          />
+        </div>
         {isExpired && (
           <p className="text-sm text-gray-400 italic">This wish has expired and is no longer accepting pledges.</p>
         )}

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import SparkLoader from "@/app/components/SparkLoader";
+import { WishCardSkeletonList } from "@/app/components/WishCardSkeleton";
 
 type Wish = {
   id: string;
@@ -12,28 +12,11 @@ type Wish = {
   visibility: string;
 };
 
-const FLASH_MESSAGES: Record<string, string> = {
-  wish_created: "Your wish is live! People can now see and pledge to it.",
-  wish_updated: "Your wish has been updated.",
-  wish_deleted: "Your wish has been deleted.",
-};
-
 function WishesPageInner() {
-  const searchParams = useSearchParams();
-  const flash = searchParams.get("flash");
-  const [banner, setBanner] = useState<string | null>(null);
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-
-  useEffect(() => {
-    if (flash && FLASH_MESSAGES[flash]) {
-      setBanner(FLASH_MESSAGES[flash]);
-      const t = setTimeout(() => setBanner(null), 4000);
-      return () => clearTimeout(t);
-    }
-  }, [flash]);
 
   useEffect(() => {
     fetch("/api/wishes")
@@ -62,16 +45,16 @@ function WishesPageInner() {
         <h1 className="text-2xl font-bold text-gray-900">Your wishes</h1>
         <Link href="/wishes/new" className="btn-primary">+ New wish</Link>
       </div>
-      {banner && <p className="success-msg mb-4">{banner}</p>}
       {fetchError ? (
         <div className="card text-center py-12 text-red-500">Failed to load wishes. Please try again.</div>
       ) : loading ? (
-        <div className="card text-center py-12 text-orange-400">
-          <SparkLoader label="Loading your wishes…" />
-        </div>
+        <WishCardSkeletonList count={3} />
       ) : wishes.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400">
-          You haven't made any wishes yet.
+        <div className="card text-center py-16">
+          <div className="text-5xl mb-4">🌟</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">You haven't made a wish yet</h3>
+          <p className="text-gray-500 mb-6">Create your first wish and let generous people help make it happen.</p>
+          <Link href="/wishes/new" className="btn-primary inline-block">Make a wish</Link>
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
