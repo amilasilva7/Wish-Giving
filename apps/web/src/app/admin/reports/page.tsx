@@ -101,7 +101,7 @@ export default function AdminReportsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Admin: Reports</h1>
           <a href="/admin/users" className="btn-secondary text-sm">Manage users</a>

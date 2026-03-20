@@ -82,7 +82,7 @@ export default function HomePage() {
 
         {/* Left — copy */}
         <div className="flex-1 text-center md:text-left">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
             Make a wish. Grant a wish.
           </h1>
           <p className="text-lg text-gray-500 mb-6">
@@ -94,7 +94,7 @@ export default function HomePage() {
         </div>
 
         {/* Right — illustration */}
-        <div className="flex-shrink-0 w-full md:w-80">
+        <div className="flex-shrink-0 w-full max-w-xs mx-auto md:max-w-none md:w-80">
           <svg viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-full">
             {/* Background glow */}
             <circle cx="150" cy="120" r="112" fill="#fff7ed"/>
@@ -148,7 +148,7 @@ export default function HomePage() {
 
       {/* Filters */}
       <div className="mb-6">
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <input
               type="text"
@@ -172,13 +172,13 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto">
+          <select value={category} onChange={e => setCategory(e.target.value)} className="input w-full sm:w-auto">
             <option value="">All categories</option>
             {WISH_CATEGORIES.map(cat => (
               <option key={cat.id} value={cat.id}>{cat.label}</option>
             ))}
           </select>
-          <select value={occasionType} onChange={e => setOccasionType(e.target.value)} className="input w-auto">
+          <select value={occasionType} onChange={e => setOccasionType(e.target.value)} className="input w-full sm:w-auto">
             <option value="">All occasions</option>
             {OCCASION_TYPES.map(o => (
               <option key={o.id} value={o.id}>{o.label}</option>

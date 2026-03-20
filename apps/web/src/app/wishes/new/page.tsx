@@ -98,7 +98,7 @@ export default function NewWishPage() {
             <textarea value={description} onChange={e => setDescription(e.target.value)}
               className="input min-h-24 resize-y" placeholder="Describe your wish in detail..." required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="form-field">
               <label className="label">Category</label>
               <select value={category} onChange={e => setCategory(e.target.value)} className="input">
@@ -116,7 +116,7 @@ export default function NewWishPage() {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="form-field">
               <label className="label">Visibility</label>
               <select value={visibility} onChange={e => setVisibility(e.target.value as any)} className="input">

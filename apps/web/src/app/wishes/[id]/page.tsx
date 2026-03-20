@@ -121,7 +121,7 @@ export default function EditWishPage() {
               onChange={e => setWish({ ...wish, description: e.target.value })}
               className="input min-h-24 resize-y" required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="form-field">
               <label className="label">Category</label>
               <select value={wish.category} onChange={e => setWish({ ...wish, category: e.target.value })} className="input">
@@ -139,7 +139,7 @@ export default function EditWishPage() {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="form-field">
               <label className="label">Visibility</label>
               <select value={wish.visibility} onChange={e => setWish({ ...wish, visibility: e.target.value })} className="input">

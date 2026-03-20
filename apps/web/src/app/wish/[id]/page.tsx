@@ -87,9 +87,9 @@ export default async function WishDetailPage({ params }: Params) {
               </div>
             ))}
           </div>
-          <div className="flex text-xs text-gray-500">
+          <div className="flex text-[10px] sm:text-xs text-gray-500">
             {statusSteps.map((step, idx) => (
-              <div key={step} className={`flex-1 text-center ${
+              <div key={step} className={`flex-1 text-center truncate px-0.5 ${
                 idx === currentStepIndex ? "font-bold text-orange-600" :
                 idx < currentStepIndex ? "text-gray-600" :
                 "text-gray-400"

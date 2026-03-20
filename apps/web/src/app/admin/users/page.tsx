@@ -88,7 +88,8 @@ export default function AdminUsersPage() {
       {actionError && <p className="error-msg mb-4">{actionError}</p>}
 
       <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
               <th className="text-left px-4 py-3 text-gray-500 font-medium">User</th>
@@ -141,6 +142,7 @@ export default function AdminUsersPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {filtered.length === 0 && (
           <div className="text-center py-8 text-gray-400">No users found.</div>
         )}
