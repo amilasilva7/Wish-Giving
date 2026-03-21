@@ -49,6 +49,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You cannot pledge on your own wish" }, { status: 400 });
   }
 
+  // Prevent the same giver from pledging twice on the same wish
+  const existingPledge = await prisma.pledge.findFirst({
+    where: { wishId, giverUserId: user.id, status: { in: ["pending", "accepted", "in_coordination"] } }
+  });
+  if (existingPledge) {
+    return NextResponse.json({ error: "You already have an active pledge on this wish" }, { status: 400 });
+  }
+
   // C8: Enforce blocks in both directions
   const block = await prisma.block.findFirst({
     where: {
@@ -70,7 +78,7 @@ export async function POST(request: Request) {
       const activePledge = await tx.pledge.findFirst({
         where: {
           wishId,
-          status: { in: ["pending", "accepted", "in_coordination"] }
+          status: { in: ["accepted", "in_coordination"] }
         }
       });
       if (activePledge) {

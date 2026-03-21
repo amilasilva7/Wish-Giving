@@ -7,13 +7,17 @@ import { useLoading } from "./LoadingProvider";
 
 export default function NavAuth() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then(r => r.json())
-      .then(data => setLoggedIn(!!data.user))
+      .then(data => {
+        setLoggedIn(!!data.user);
+        setIsAdmin(!!data.isAdmin);
+      })
       .catch(() => setLoggedIn(false));
   }, []);
 
@@ -33,9 +37,14 @@ export default function NavAuth() {
 
   if (loggedIn) {
     return (
-      <button onClick={handleLogout} disabled={logoutLoading} className="btn-primary text-sm px-3 py-1.5">
-        {logoutLoading ? <SparkLoader label="Signing out…" size="sm" /> : "Log out"}
-      </button>
+      <div className="flex items-center gap-3">
+        {isAdmin && (
+          <Link href="/admin/users" className="text-xs text-gray-500 hover:text-orange-500">Admin</Link>
+        )}
+        <button onClick={handleLogout} disabled={logoutLoading} className="btn-primary text-sm px-3 py-1.5">
+          {logoutLoading ? <SparkLoader label="Signing out…" size="sm" /> : "Log out"}
+        </button>
+      </div>
     );
   }
 

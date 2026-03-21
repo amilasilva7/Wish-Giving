@@ -99,6 +99,27 @@ export default function AdminReportsPage() {
     }
   }
 
+  async function enableWish(wishId: string) {
+    setActionLoading(true);
+    showLoading("Re-enabling wish…");
+    try {
+      const res = await fetch(`/api/admin/wishes/${wishId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "open" })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to re-enable wish");
+        return;
+      }
+      await load();
+    } finally {
+      setActionLoading(false);
+      hideLoading();
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -121,7 +142,13 @@ export default function AdminReportsPage() {
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono mr-2">{r.targetType}</span>
-                  <span className="text-xs text-gray-400 font-mono">{r.targetId}</span>
+                  {r.targetType === "wish" ? (
+                    <a href={`/wish/${r.targetId}`} target="_blank" rel="noopener" className="text-xs text-orange-500 hover:underline font-mono">{r.targetId}</a>
+                  ) : r.targetType === "user" ? (
+                    <a href={`/user/${r.targetId}`} target="_blank" rel="noopener" className="text-xs text-orange-500 hover:underline font-mono">{r.targetId}</a>
+                  ) : (
+                    <span className="text-xs text-gray-400 font-mono">{r.targetId}</span>
+                  )}
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                   r.status === "open" ? "bg-yellow-50 text-yellow-700" : "bg-gray-100 text-gray-500"
@@ -144,9 +171,14 @@ export default function AdminReportsPage() {
                   </button>
                 )}
                 {r.targetType === "wish" && (
-                  <button onClick={() => disableWish(r.targetId)} disabled={actionLoading} className="btn-danger text-sm px-3 py-1.5">
-                    Disable wish
-                  </button>
+                  <>
+                    <button onClick={() => disableWish(r.targetId)} disabled={actionLoading} className="btn-danger text-sm px-3 py-1.5">
+                      Disable wish
+                    </button>
+                    <button onClick={() => enableWish(r.targetId)} disabled={actionLoading} className="btn-secondary text-sm px-3 py-1.5">
+                      Re-enable wish
+                    </button>
+                  </>
                 )}
               </div>
             </li>

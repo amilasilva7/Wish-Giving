@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
+import { WISH_CATEGORIES, OCCASION_TYPES, BUDGET_RANGES } from "@/domain/taxonomy";
 import SparkLoader from "@/app/components/SparkLoader";
 import { useToast } from "@/app/components/Toast";
 import { useLoading } from "@/app/components/LoadingProvider";
@@ -17,6 +17,7 @@ type Wish = {
   visibility: string;
   locationCoarse: string | null;
   expiresAt: string | null;
+  budgetRangeId: string | null;
 };
 
 export default function EditWishPage() {
@@ -147,12 +148,44 @@ export default function EditWishPage() {
                 <option value="limited">Limited</option>
                 <option value="private_link">Private link</option>
               </select>
+              {wish.visibility === "limited" && (
+                <p className="text-xs text-gray-400 mt-1">Givers see title and category only — no description or location.</p>
+              )}
+              {wish.visibility === "private_link" && (
+                <p className="text-xs text-gray-400 mt-1">Only people with the direct link can view this wish.</p>
+              )}
             </div>
             <div className="form-field">
               <label className="label">City / Area</label>
               <input type="text" value={wish.locationCoarse ?? ""}
                 onChange={e => setWish({ ...wish, locationCoarse: e.target.value })}
                 className="input" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="form-field">
+              <label className="label">Budget range (optional)</label>
+              <select value={wish.budgetRangeId ?? ""} onChange={e => setWish({ ...wish, budgetRangeId: e.target.value || null })} className="input">
+                <option value="">No budget specified</option>
+                {BUDGET_RANGES.map(b => (
+                  <option key={b.id} value={b.id}>{b.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-field">
+              <label className="label">Expires on (optional)</label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={wish.expiresAt ? new Date(wish.expiresAt).toISOString().split("T")[0] : ""}
+                  onChange={e => setWish({ ...wish, expiresAt: e.target.value || null })}
+                  className="input flex-1"
+                />
+                {wish.expiresAt && (
+                  <button type="button" onClick={() => setWish({ ...wish, expiresAt: null })}
+                    className="btn-secondary text-sm px-2">Clear</button>
+                )}
+              </div>
             </div>
           </div>
           {wish.expiresAt && new Date(wish.expiresAt) < new Date() && (

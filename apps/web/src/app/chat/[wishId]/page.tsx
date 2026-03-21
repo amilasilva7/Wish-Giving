@@ -2,6 +2,7 @@
 
 import { useEffect, useState, FormEvent, useRef } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import SparkLoader from "@/app/components/SparkLoader";
 import PageLoader from "@/app/components/PageLoader";
 
@@ -34,6 +35,7 @@ export default function ChatPage() {
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   async function ensureConversation() {
@@ -42,6 +44,14 @@ export default function ChatPage() {
 
   async function loadConversation() {
     const res = await fetch(`/api/conversations/${params.wishId}`);
+    if (res.status === 401) {
+      setAuthError("login");
+      return;
+    }
+    if (res.status === 403) {
+      setAuthError("forbidden");
+      return;
+    }
     if (!res.ok) return;
     const data = await res.json();
     setConversation(data.conversation);
@@ -53,6 +63,13 @@ export default function ChatPage() {
       await loadConversation();
     })();
   }, [params.wishId]);
+
+  // Poll every 8 seconds when conversation is loaded
+  useEffect(() => {
+    if (!conversation) return;
+    const interval = setInterval(loadConversation, 8000);
+    return () => clearInterval(interval);
+  }, [conversation?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,6 +93,29 @@ export default function ChatPage() {
     }
     setBody("");
     await loadConversation();
+  }
+
+  if (authError === "forbidden") {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="card text-center py-12">
+          <p className="text-gray-500">You don't have access to this conversation.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authError === "login") {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="card text-center py-12">
+          <p className="text-gray-500 mb-4">You must be signed in to view this conversation.</p>
+          <Link href={`/auth/login?redirect=/chat/${params.wishId}`} className="btn-primary inline-block">
+            Log in
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

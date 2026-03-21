@@ -50,7 +50,7 @@ export async function POST(_request: Request, { params }: Params) {
   const pledge = await prisma.pledge.findFirst({
     where: {
       wishId: params.wishId,
-      status: { in: ["accepted", "in_coordination"] }
+      status: { in: ["accepted", "in_coordination", "fulfilled"] }
     },
     include: { wish: true }
   });

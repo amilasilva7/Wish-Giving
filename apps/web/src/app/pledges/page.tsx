@@ -13,6 +13,7 @@ type Pledge = {
   wish: { id: string; title: string; userId: string };
 };
 
+
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-50 text-yellow-700",
   accepted: "bg-blue-50 text-blue-700",
@@ -29,14 +30,33 @@ function MyPledgesPageInner() {
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const [retracting, setRetracting] = useState<string | null>(null);
+  const [confirmRetract, setConfirmRetract] = useState<string | null>(null);
 
   useEffect(() => {
     if (flash === "pledged") {
-      setBanner("Your pledge has been sent! The wisher will be notified.");
+      setBanner("Your pledge has been sent! The wisher will see it when they check their pledges.");
       const t = setTimeout(() => setBanner(null), 4000);
       return () => clearTimeout(t);
     }
   }, [flash]);
+
+  async function retractPledge(pledgeId: string) {
+    setRetracting(pledgeId);
+    setConfirmRetract(null);
+    try {
+      await fetch(`/api/pledges/${pledgeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "retract" })
+      });
+      const res = await fetch("/api/pledges");
+      const data = await res.json();
+      if (data) setPledges(data.pledges ?? []);
+    } finally {
+      setRetracting(null);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/pledges")
@@ -54,7 +74,7 @@ function MyPledgesPageInner() {
     return (
       <div className="card text-center py-12">
         <p className="text-gray-500 mb-4">You must be signed in to view your pledges.</p>
-        <Link href="/auth/login" className="btn-primary inline-block">Login</Link>
+        <Link href="/auth/login?redirect=/pledges" className="btn-primary inline-block">Login</Link>
       </div>
     );
   }
@@ -92,10 +112,32 @@ function MyPledgesPageInner() {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[pledge.status] ?? "bg-gray-100 text-gray-500"}`}>
                     {pledge.status.replace("_", " ")}
                   </span>
+                  {pledge.status === "pending" && (
+                    confirmRetract === pledge.id ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-600">Retract?</span>
+                        <button
+                          onClick={() => retractPledge(pledge.id)}
+                          disabled={retracting === pledge.id}
+                          className="btn-danger text-xs px-2 py-1"
+                        >
+                          {retracting === pledge.id ? <SparkLoader size="sm" /> : "Yes"}
+                        </button>
+                        <button onClick={() => setConfirmRetract(null)} className="btn-secondary text-xs px-2 py-1">No</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmRetract(pledge.id)}
+                        className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        Retract
+                      </button>
+                    )
+                  )}
                   {(pledge.status === "accepted" || pledge.status === "in_coordination") && (
                     <Link href={`/chat/${pledge.wish.id}`} className="btn-primary text-xs px-3 py-1.5 inline-block">
                       Chat

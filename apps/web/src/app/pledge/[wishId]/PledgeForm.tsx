@@ -1,0 +1,66 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import SparkLoader from "@/app/components/SparkLoader";
+import { useLoading } from "@/app/components/LoadingProvider";
+
+export default function PledgeForm({ wishId }: { wishId: string }) {
+  const router = useRouter();
+  const { showLoading, hideLoading } = useLoading();
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    showLoading("Sending pledge…");
+    try {
+      const res = await fetch("/api/pledges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wishId, message })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to create pledge");
+        setLoading(false);
+        hideLoading();
+        return;
+      }
+      router.push("/pledges?flash=pledged");
+    } catch {
+      setLoading(false);
+      hideLoading();
+    }
+  }
+
+  return (
+    <div className="card">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="form-field">
+          <label className="label">
+            Message to wisher <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <textarea
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+            className="input min-h-28 resize-y"
+            placeholder="Introduce yourself and explain how you'd like to help..."
+          />
+        </div>
+        {error && <p className="error-msg">{error}</p>}
+        <div className="flex gap-3">
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? <SparkLoader label="Sending pledge…" size="sm" /> : "Send pledge"}
+          </button>
+          <button type="button" onClick={() => router.back()} className="btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

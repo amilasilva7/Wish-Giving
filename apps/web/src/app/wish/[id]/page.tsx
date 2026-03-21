@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 import FavouriteButton from "@/app/components/FavouriteButton";
 import ShareButton from "@/app/components/ShareButton";
+import ReportWishButton from "@/app/components/ReportWishButton";
+import PledgeButton from "@/app/components/PledgeButton";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +25,7 @@ export default async function WishDetailPage({ params }: Params) {
             locationCoarse: true
           }
         },
-        _count: { select: { favourites: true } }
+        _count: { select: { favourites: true, pledges: true } }
       }
     }),
     getCurrentUser()
@@ -108,6 +110,9 @@ export default async function WishDetailPage({ params }: Params) {
               {isExpired ? "Expired" : `Expires ${new Date(wish.expiresAt).toLocaleDateString()}`}
             </span>
           )}
+          {wish._count.pledges > 0 && (
+            <span className="text-xs text-gray-400">{wish._count.pledges} pledge{wish._count.pledges !== 1 ? "s" : ""}</span>
+          )}
           <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-medium ${
             wish.status === "open" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
           }`}>
@@ -117,9 +122,7 @@ export default async function WishDetailPage({ params }: Params) {
 
         <div className="flex gap-3">
           {wish.status === "open" && !isExpired && (
-            <Link href={`/pledge/${wish.id}`} className="btn-primary inline-block">
-              Pledge to fulfill this wish
-            </Link>
+            <PledgeButton wishId={wish.id} isAuthed={!!user} />
           )}
           <ShareButton
             url={typeof window !== "undefined" ? window.location.href : `${process.env.NEXT_PUBLIC_BASE_URL || ""}/wish/${wish.id}`}
@@ -129,6 +132,7 @@ export default async function WishDetailPage({ params }: Params) {
         {isExpired && (
           <p className="text-sm text-gray-400 italic">This wish has expired and is no longer accepting pledges.</p>
         )}
+        <ReportWishButton wishId={wish.id} />
       </div>
     </div>
   );

@@ -30,12 +30,26 @@ export default function PublicProfilePage() {
   const [blockLoading, setBlockLoading] = useState(false);
   const [blockSuccess, setBlockSuccess] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetch(`/api/users/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => { setUser(data.user); setLoading(false); })
       .catch(() => { setError("User not found."); setLoading(false); });
+
+    // Check auth and block status in parallel
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(data => setAuthed(data.user !== null))
+      .catch(() => setAuthed(false));
+
+    fetch("/api/block")
+      .then(r => r.ok ? r.json() : { blockedIds: [] })
+      .then(data => {
+        if (data.blockedIds?.includes(id)) setBlocked(true);
+      })
+      .catch(() => {});
   }, [id]);
 
   async function submitReport() {
@@ -108,8 +122,8 @@ export default function PublicProfilePage() {
         <div className="border-t border-gray-100 pt-4 flex flex-wrap items-center gap-3">
           {blocked ? (
             <button
-              onClick={handleBlock}
-              disabled={blockLoading}
+              onClick={authed ? handleBlock : () => window.location.href = `/auth/login?redirect=${encodeURIComponent(`/user/${id}`)}`}
+              disabled={blockLoading || authed === null}
               className="text-xs mr-3 text-gray-400 hover:text-gray-600 transition-colors"
             >
               {blockLoading ? <SparkLoader label="Unblocking…" size="sm" /> : "Unblock user"}
@@ -128,8 +142,15 @@ export default function PublicProfilePage() {
             </div>
           ) : (
             <button
-              onClick={() => setConfirmBlock(true)}
-              className="text-xs mr-3 text-red-400 hover:text-red-600 transition-colors"
+              onClick={() => {
+                if (!authed) {
+                  window.location.href = `/auth/login?redirect=${encodeURIComponent(`/user/${id}`)}`;
+                  return;
+                }
+                setConfirmBlock(true);
+              }}
+              disabled={authed === null}
+              className="text-xs mr-3 text-red-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Block user
             </button>
@@ -152,14 +173,24 @@ export default function PublicProfilePage() {
               <button onClick={() => setReporting(false)} className="btn-secondary text-sm px-3 py-1.5">Cancel</button>
             </div>
           ) : (
-            <button onClick={() => setReporting(true)} className="text-xs text-gray-400 hover:text-red-500 transition-colors">
+            <button
+              onClick={() => {
+                if (!authed) {
+                  window.location.href = `/auth/login?redirect=${encodeURIComponent(`/user/${id}`)}`;
+                  return;
+                }
+                setReporting(true);
+              }}
+              disabled={authed === null}
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Report user
             </button>
           )}
         </div>
       </div>
 
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">Open wishes ({user.wishes.length})</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">Wishes ({user.wishes.length})</h2>
       {user.wishes.length === 0 ? (
         <div className="card text-center py-8 text-gray-400">No public wishes.</div>
       ) : (
@@ -170,9 +201,18 @@ export default function PublicProfilePage() {
                 <Link href={`/wish/${wish.id}`} className="font-semibold text-gray-900 hover:text-orange-500 transition-colors min-w-0 truncate">
                   {wish.title}
                 </Link>
-                <span className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full whitespace-nowrap font-medium">
-                  {wish.category}
-                </span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    wish.status === "open" ? "bg-green-50 text-green-700" :
+                    wish.status === "fulfilled" ? "bg-green-100 text-green-800" :
+                    "bg-gray-100 text-gray-500"
+                  }`}>
+                    {wish.status.replace("_", " ")}
+                  </span>
+                  <span className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full whitespace-nowrap font-medium">
+                    {wish.category}
+                  </span>
+                </div>
               </div>
             </li>
           ))}

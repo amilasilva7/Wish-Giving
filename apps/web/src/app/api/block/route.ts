@@ -3,6 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { isSameOrigin } from "@/lib/sameOrigin";
 
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ blockedIds: [] });
+  }
+  const blocks = await prisma.block.findMany({
+    where: { blockerId: user.id },
+    select: { blockedId: true }
+  });
+  return NextResponse.json({ blockedIds: blocks.map(b => b.blockedId) });
+}
+
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Bad origin" }, { status: 403 });

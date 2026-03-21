@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { WISH_CATEGORIES, OCCASION_TYPES } from "@/domain/taxonomy";
+import { WISH_CATEGORIES, OCCASION_TYPES, BUDGET_RANGES } from "@/domain/taxonomy";
 import SparkLoader from "@/app/components/SparkLoader";
 import { useToast } from "@/app/components/Toast";
 import { useLoading } from "@/app/components/LoadingProvider";
@@ -17,6 +17,8 @@ export default function NewWishPage() {
   const [occasionType, setOccasionType] = useState<string>(OCCASION_TYPES[0]?.id ?? "");
   const [visibility, setVisibility] = useState<"public" | "limited" | "private_link">("public");
   const [locationCoarse, setLocationCoarse] = useState("");
+  const [budgetRangeId, setBudgetRangeId] = useState<string>("");
+  const [expiresAt, setExpiresAt] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
@@ -34,6 +36,8 @@ export default function NewWishPage() {
           setOccasionType(draft.occasionType ?? OCCASION_TYPES[0]?.id ?? "");
           setVisibility(draft.visibility ?? "public");
           setLocationCoarse(draft.locationCoarse ?? "");
+          setBudgetRangeId(draft.budgetRangeId ?? "");
+          setExpiresAt(draft.expiresAt ?? "");
           setDraftRestored(true);
         } else {
           localStorage.removeItem("wish_draft");
@@ -53,12 +57,12 @@ export default function NewWishPage() {
       const res = await fetch("/api/wishes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, category, occasionType, visibility, locationCoarse })
+        body: JSON.stringify({ title, description, category, occasionType, visibility, locationCoarse, budgetRangeId: budgetRangeId || undefined, expiresAt: expiresAt || undefined })
       });
       if (res.status === 401) {
         localStorage.setItem("wish_draft", JSON.stringify({
           savedAt: Date.now(),
-          title, description, category, occasionType, visibility, locationCoarse
+          title, description, category, occasionType, visibility, locationCoarse, budgetRangeId, expiresAt
         }));
         window.location.href = "/auth/login?redirect=/wishes/new";
         return;
@@ -124,11 +128,33 @@ export default function NewWishPage() {
                 <option value="limited">Limited (coarse info only)</option>
                 <option value="private_link">Private link</option>
               </select>
+              {visibility === "limited" && (
+                <p className="text-xs text-gray-400 mt-1">Givers see title and category only — no description or location.</p>
+              )}
+              {visibility === "private_link" && (
+                <p className="text-xs text-gray-400 mt-1">Only people with the direct link can view this wish.</p>
+              )}
             </div>
             <div className="form-field">
               <label className="label">City / Area (optional)</label>
               <input type="text" value={locationCoarse} onChange={e => setLocationCoarse(e.target.value)}
                 className="input" placeholder="e.g. Mumbai" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="form-field">
+              <label className="label">Budget range (optional)</label>
+              <select value={budgetRangeId} onChange={e => setBudgetRangeId(e.target.value)} className="input">
+                <option value="">No budget specified</option>
+                {BUDGET_RANGES.map(b => (
+                  <option key={b.id} value={b.id}>{b.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-field">
+              <label className="label">Expires on (optional)</label>
+              <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="input"
+                min={new Date().toISOString().split("T")[0]} />
             </div>
           </div>
           {error && <p className="error-msg">{error}</p>}

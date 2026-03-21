@@ -29,13 +29,24 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: "", avatarUrl: "", locationCoarse: "" });
+  const [form, setForm] = useState({ name: "", avatarUrl: "", locationCoarse: "", email: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const { showLoading, hideLoading } = useLoading();
   const [favourites, setFavourites] = useState<FavWish[]>([]);
   const [loadingFavs, setLoadingFavs] = useState(true);
+
+  // Password change state
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+
+  // Account deletion state
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me").then(r => r.json()).then(data => {
@@ -44,7 +55,8 @@ export default function ProfilePage() {
         setForm({
           name: data.user.name ?? "",
           avatarUrl: data.user.avatarUrl ?? "",
-          locationCoarse: data.user.locationCoarse ?? ""
+          locationCoarse: data.user.locationCoarse ?? "",
+          email: data.user.email ?? ""
         });
       }
       setLoading(false);
@@ -83,6 +95,48 @@ export default function ProfilePage() {
     }
   }
 
+  async function handlePasswordChange(e: FormEvent) {
+    e.preventDefault();
+    setPwError(null);
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError("Passwords do not match");
+      return;
+    }
+    if (pwForm.newPassword.length < 8) {
+      setPwError("Password must be at least 8 characters");
+      return;
+    }
+    setPwSaving(true);
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setPwError(data.error ?? "Failed to change password");
+        return;
+      }
+      setPwSuccess(true);
+      setShowPasswordForm(false);
+      setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setTimeout(() => setPwSuccess(false), 4000);
+    } finally {
+      setPwSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await fetch("/api/users/me", { method: "DELETE" });
+      window.location.href = "/";
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function handleEditClick() {
     setSuccess(false);
     setEditing(true);
@@ -94,7 +148,7 @@ export default function ProfilePage() {
     return (
       <div className="card text-center py-12">
         <p className="text-gray-500 mb-4">You must be signed in to view your profile.</p>
-        <Link href="/auth/login" className="btn-primary inline-block">Login</Link>
+        <Link href="/auth/login?redirect=/profile" className="btn-primary inline-block">Login</Link>
       </div>
     );
   }
@@ -104,6 +158,7 @@ export default function ProfilePage() {
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Your profile</h1>
       {success && <p className="success-msg mb-4">Profile updated successfully.</p>}
+      {pwSuccess && <p className="success-msg mb-4">Password changed successfully.</p>}
       <div className="card mb-8">
         <div className="flex items-center gap-4 mb-6">
           {user.avatarUrl ? (
@@ -148,6 +203,11 @@ export default function ProfilePage() {
                 className="input" required />
             </div>
             <div className="form-field">
+              <label className="label">Email</label>
+              <input type="email" value={form.email ?? ""} onChange={e => setForm({ ...form, email: e.target.value })}
+                className="input" placeholder="you@example.com" />
+            </div>
+            <div className="form-field">
               <label className="label">Avatar URL</label>
               <input type="url" value={form.avatarUrl} onChange={e => setForm({ ...form, avatarUrl: e.target.value })}
                 className="input" placeholder="https://..." />
@@ -165,6 +225,49 @@ export default function ProfilePage() {
           </form>
         )}
       </div>
+
+      {/* Change Password */}
+      <div className="card mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800">Change password</h2>
+          <button
+            onClick={() => setShowPasswordForm(v => !v)}
+            className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+          >
+            {showPasswordForm ? "Cancel" : "Change"}
+          </button>
+        </div>
+        {showPasswordForm && (
+          <form onSubmit={handlePasswordChange} className="flex flex-col gap-4">
+            <div className="form-field">
+              <label className="label">Current password</label>
+              <input type="password" value={pwForm.currentPassword}
+                onChange={e => setPwForm({ ...pwForm, currentPassword: e.target.value })}
+                className="input" required />
+            </div>
+            <div className="form-field">
+              <label className="label">New password</label>
+              <input type="password" value={pwForm.newPassword}
+                onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })}
+                className="input" required />
+            </div>
+            <div className="form-field">
+              <label className="label">Confirm new password</label>
+              <input type="password" value={pwForm.confirmPassword}
+                onChange={e => setPwForm({ ...pwForm, confirmPassword: e.target.value })}
+                className="input" required />
+            </div>
+            {pwError && <p className="error-msg">{pwError}</p>}
+            <button type="submit" className="btn-primary" disabled={pwSaving}>
+              {pwSaving ? <SparkLoader label="Saving…" size="sm" /> : "Update password"}
+            </button>
+          </form>
+        )}
+        {!showPasswordForm && (
+          <p className="text-sm text-gray-400">Click "Change" to update your password.</p>
+        )}
+      </div>
+
       {/* Favourites */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-4">❤️ Saved wishes ({favourites.length})</h2>
@@ -204,6 +307,25 @@ export default function ProfilePage() {
             ))}
           </ul>
         )}
+      </div>
+
+      {/* Danger zone */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Danger zone</h2>
+        <div className="card border-red-200">
+          <p className="text-sm text-gray-600 mb-4">Permanently delete your account and all your data. This cannot be undone.</p>
+          {confirmDelete ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">Are you sure? This cannot be undone.</span>
+              <button onClick={handleDeleteAccount} disabled={deleting} className="btn-danger text-sm px-3 py-1.5">
+                {deleting ? <SparkLoader label="Deleting…" size="sm" /> : "Yes, delete my account"}
+              </button>
+              <button onClick={() => setConfirmDelete(false)} className="btn-secondary text-sm px-3 py-1.5">Cancel</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)} className="btn-danger text-sm">Delete account</button>
+          )}
+        </div>
       </div>
     </div>
     </>

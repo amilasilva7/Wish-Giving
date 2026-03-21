@@ -13,7 +13,7 @@ export async function GET(_req: Request, { params }: Params) {
       locationCoarse: true,
       createdAt: true,
       wishes: {
-        where: { visibility: "public", status: "open" },
+        where: { visibility: "public", status: { in: ["open", "fulfilled", "in_coordination"] } },
         orderBy: { createdAt: "desc" },
         select: { id: true, title: true, category: true, status: true, createdAt: true }
       }

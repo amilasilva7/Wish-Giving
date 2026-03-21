@@ -11,7 +11,10 @@ export async function GET() {
 
   const wishes = await prisma.wish.findMany({
     where: { userId: user.id },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
+    include: {
+      _count: { select: { pledges: true, favourites: true } }
+    }
   });
 
   return NextResponse.json({ wishes });

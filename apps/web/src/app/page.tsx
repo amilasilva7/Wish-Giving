@@ -11,6 +11,7 @@ type Wish = {
   id: string;
   userId: string;
   title: string;
+  description: string;
   category: string;
   user: { name: string; locationCoarse: string | null; avatarUrl: string | null };
   _count: { favourites: number };
@@ -24,16 +25,18 @@ export default function HomePage() {
   const [category, setCategory] = useState("");
   const [occasionType, setOccasionType] = useState("");
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState("newest");
   const [fetchError, setFetchError] = useState(false);
   const [searching, setSearching] = useState(false);
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
 
-  async function fetchWishes(params: { category?: string; occasionType?: string; q?: string; cursor?: string }, append = false) {
+  async function fetchWishes(params: { category?: string; occasionType?: string; q?: string; cursor?: string; sort?: string }, append = false) {
     const url = new URL("/api/feed", window.location.origin);
     if (params.category) url.searchParams.set("category", params.category);
     if (params.occasionType) url.searchParams.set("occasionType", params.occasionType);
     if (params.q) url.searchParams.set("q", params.q);
     if (params.cursor) url.searchParams.set("cursor", params.cursor);
+    if (params.sort) url.searchParams.set("sort", params.sort);
 
     const res = await fetch(url.toString());
     if (!res.ok) {
@@ -63,15 +66,15 @@ export default function HomePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearching(true);
-      fetchWishes({ category, occasionType, q }).finally(() => setSearching(false));
+      fetchWishes({ category, occasionType, q, sort }).finally(() => setSearching(false));
     }, 400);
     return () => clearTimeout(timer);
-  }, [q, category, occasionType]);
+  }, [q, category, occasionType, sort]);
 
   async function handleLoadMore() {
     if (!nextCursor) return;
     setLoadingMore(true);
-    await fetchWishes({ category, occasionType, q, cursor: nextCursor }, true);
+    await fetchWishes({ category, occasionType, q, sort, cursor: nextCursor }, true);
     setLoadingMore(false);
   }
 
@@ -184,6 +187,11 @@ export default function HomePage() {
               <option key={o.id} value={o.id}>{o.label}</option>
             ))}
           </select>
+          <select value={sort} onChange={e => setSort(e.target.value)} className="input w-full sm:w-auto">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="most_saved">Most saved</option>
+          </select>
         </div>
 
         {/* Filter pills */}
@@ -262,6 +270,11 @@ export default function HomePage() {
                       <Link href={`/wish/${wish.id}`} className="text-lg font-semibold text-gray-900 hover:text-orange-500 transition-colors">
                         {wish.title}
                       </Link>
+                      {wish.description && (
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                          {wish.description}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         {wish.user.avatarUrl ? (
                           <img

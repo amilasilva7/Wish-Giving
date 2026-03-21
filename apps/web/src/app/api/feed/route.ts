@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   const occasionType = searchParams.get("occasionType") || undefined;
   const q = searchParams.get("q") || undefined;
   const cursor = searchParams.get("cursor") || undefined;
+  const sort = searchParams.get("sort") || "newest";
 
   const where: any = {
     status: "open",
@@ -59,9 +60,13 @@ export async function GET(request: Request) {
     // non-fatal: if auth check fails, just show unfiltered feed
   }
 
+  const orderBy: any = sort === "oldest" ? { createdAt: "asc" }
+    : sort === "most_saved" ? { favourites: { _count: "desc" } }
+    : { createdAt: "desc" }; // newest (default)
+
   const wishes = await prisma.wish.findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    orderBy,
     take: PAGE_SIZE + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
